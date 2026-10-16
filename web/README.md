@@ -6,7 +6,7 @@ Run from the repo root: `uvicorn api:app --reload`, then open http://127.0.0.1:8
 
 | File | What it holds |
 | --- | --- |
-| `index.html` | Hero, the flow (path, type, about, results), paths, map slot, how it works |
+| `index.html` | Hero with the chat window, what is out there, the map, what happens to your answers |
 | `styles.css` | Tokens at the top. Three colours only: `--paper`, `--ink` and `--orange` (with `--orange-ink` for small orange text). Type carries the variety: Bricolage Grotesque headlines, Instrument Serif italic accents, IBM Plex Mono labels, Atkinson Hyperlegible body, the same families as `/map` |
 | `app.js` | Flow logic, results rendering, the map hook, voice chat and all motion (GSAP, Lenis smooth scroll). Motion is skipped when the visitor asks for reduced motion |
 | `dotfield.js` | The hero background: the React Bits DotField component ported to plain JS (WebGL2; falls back to a CSS dot grid) |
@@ -45,7 +45,9 @@ The SDK is loaded from jsDelivr (`@elevenlabs/client@1.26.0`) only when someone 
 
 ## Voice and chat
 
-When the server has an ElevenLabs key, questions, results, crisis messages and chat replies get a Listen button, and each answer box gets a Speak button (recorded in the browser, transcribed on the server). Ask Pathly under the results calls `POST /api/chat`.
+The hero is a chat. Pathly asks the wireframe questions one at a time (studying or exploring, type, hobbies or interests, studies or experience, area), each with a pop-up of numbered options above the prompt bar, like Claude's question cards: click, press the number, or use the arrow keys and Enter; Esc or "Something else" means type your own. Typed answers are read in plain words ("college", "I want money", "Royton"), and free-text questions take "skip". The questions live in `QUESTIONS` in `app.js`. Matches from `POST /api/match` then appear in the chat as cards, and the conversation carries on through `POST /api/chat`, with its suggested questions shown as the pop-up.
+
+The mic beside the bar starts a spoken conversation with the ElevenLabs agent when one is set up (below). Otherwise it dictates into the bar: through the server (`/api/transcribe`, which removes personal details) when there is an ElevenLabs key, or the browser's own speech recognition when there is not. With a key, Pathly's messages and the result cards also get a Listen button.
 
 ## Map contract
 

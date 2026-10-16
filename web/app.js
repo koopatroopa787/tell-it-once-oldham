@@ -1,25 +1,22 @@
-// Pathly front end. Flow: path -> type -> about -> results (team wireframe). Talks to POST /api/match in api.py (FastAPI, which also serves this folder).
+// Pathly front end. A chat asks the team wireframe's questions one at a time (path -> type -> about -> area), with
+// Claude-style option pop-ups, then shows matches from POST /api/match and keeps talking through POST /api/chat.
+// FastAPI (api.py) also serves this folder.
 
 const TYPES = { voluntary: 'Voluntary', paid_work: 'Paid work', social_work: 'Social' };
-const STEPS = ['path', 'type', 'about', 'results'];
+const DISTRICTS = ['Anywhere in Oldham', 'Central', 'East', 'North', 'South', 'West'];
+const FIELDS = ['path', 'type', 'district', 'hobbies', 'studies', 'interests', 'experience'];
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const answers = {};
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// ---- Flow -----------------------------------------------------------------
-
-function show(step) {
-  $$('.step').forEach((el) => { el.hidden = el.dataset.step !== step; });
-  $('#progress-bar').style.transform = `scaleX(${(STEPS.indexOf(step) + 1) / STEPS.length})`;
-  if (step === 'about') {
-    $$('.fields').forEach((el) => { el.hidden = el.dataset.for !== answers.path; });
-  }
-  stopSpeaking();
-  const heading = $(`.step[data-step="${step}"] h3`);
-  if (heading) { heading.tabIndex = -1; heading.focus({ preventScroll: true }); }
-  if (window.gsap && !reduceMotion) gsap.fromTo(`.step[data-step="${step}"]`, { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.6, ease: 'expo.out' });
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text) node.textContent = text;
+  return node;
 }
 
 // Smooth scroll to a section; Lenis when it is running, the browser otherwise.
@@ -30,89 +27,289 @@ function goTo(sel) {
   else target.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' });
 }
 
+// ---- Questions ------------------------------------------------------------
+// Each one: what Pathly says, optional pop-up options, and how to read a typed reply.
+// Choice questions understand plain words ("college", "Royton"); free-text ones take anything, or "skip".
 
-$$('[data-path]').forEach((btn) => btn.addEventListener('click', () => {
-  answers.path = btn.dataset.path;
-  show(answers.type ? 'about' : 'type'); // a lane pick from "Paths" already chose the type
-}));
+const has = (re) => (text) => re.test(text.toLowerCase());
+const QUESTIONS = [
+  {
+    key: 'path', step: 'Where you are now', title: 'Studying, or exploring?',
+    say: () => "Hi, I'm Pathly. I'll ask a few quick things, then show you places in Oldham worth trying. First up: are you studying at the moment, or working out what's next?",
+    options: () => [
+      { value: 'student', label: "I'm studying", desc: 'School, college, sixth form or uni' },
+      { value: 'explore', label: "I'm exploring my options", desc: "Not studying right now, or working out what's next" },
+    ],
+    read: (t) => (has(/stud|school|college|uni\b|universit|sixth|gcse|a.?level|btec|t.?level|course|year \d/)(t) ? 'student'
+      : has(/explor|not stud|left|finish|leav|work|job|nothing|neet|options|next/)(t) ? 'explore' : null),
+  },
+  {
+    key: 'type', step: 'What you want', title: 'What are you after?',
+    say: () => (answers.path === 'student' ? 'Nice. Alongside studying, what are you after?' : 'Got it. What are you after?'),
+    options: () => [
+      { value: 'voluntary', label: 'Voluntary', desc: 'Give some time, pick up skills, get a reference' },
+      { value: 'paid_work', label: 'Paid work', desc: 'Jobs, apprenticeships, help with your CV' },
+      { value: 'social_work', label: 'Social', desc: 'Clubs, groups and things to do with other people' },
+    ],
+    read: (t) => (has(/volunt|help out|give (some )?time|charity/)(t) ? 'voluntary'
+      : has(/paid|job|work|money|apprentic|earn|cv|career/)(t) ? 'paid_work'
+        : has(/social|club|friend|group|meet|fun|activit|hang|people/)(t) ? 'social_work' : null),
+  },
+  {
+    key: () => (answers.path === 'student' ? 'hobbies' : 'interests'), step: 'What you like', title: 'Pick one, or type your own',
+    say: () => (answers.path === 'student' ? 'What do you get up to in your free time? Anything counts.' : "What are you into? Anything goes, even if it doesn't feel useful."),
+    options: () => ['Sport and fitness', 'Art and drawing', 'Gaming and tech', 'Music', 'Cooking', 'Helping people'].map((v) => ({ value: v, label: v })),
+    free: true,
+  },
+  {
+    key: () => (answers.path === 'student' ? 'studies' : 'experience'), step: 'What you know', title: 'Pick one, or type your own',
+    say: () => (answers.path === 'student' ? 'And what are you studying?' : 'Any work or experience so far? A paper round or helping family out counts.'),
+    options: () => (answers.path === 'student'
+      ? ['GCSEs', 'A levels', 'A BTEC', 'An apprenticeship', 'Uni']
+      : ['Nothing yet', 'Part-time or weekend work', 'Helping family or neighbours', 'Volunteering']).map((v) => ({ value: v, label: v })),
+    free: true,
+  },
+  {
+    key: 'district', step: 'Where in Oldham', title: 'Which part of Oldham?',
+    say: () => 'Last one. Roughly which part of Oldham are you in? A town or a postcode start like OL8 is fine.',
+    options: () => DISTRICTS.slice(1).map((d) => ({ value: d, label: d, desc: AREA_HINT[d] })).concat({ value: 'Anywhere in Oldham', label: 'Anywhere is fine' }),
+    read: (t) => (has(/centre|center|coldhurst|town|ol1\b|central/)(t) ? 'Central'
+      : has(/royton|shaw|crompton|ol2\b|north/)(t) ? 'North'
+        : has(/saddleworth|uppermill|delph|dobcross|lees|waterhead|springhead|grotton|ol3\b|ol4\b|east/)(t) ? 'East'
+          : has(/hollinwood|werneth|fitton|hathershaw|failsworth|ol8\b|m35\b|south/)(t) ? 'South'
+            : has(/chadderton|westwood|freehold|ol9\b|west/)(t) ? 'West'
+              : has(/any|not sure|don.?t know|dunno|skip|rather not|whatever/)(t) ? 'Anywhere in Oldham' : null),
+  },
+];
+const AREA_HINT = { Central: 'Town centre, Coldhurst', North: 'Royton, Shaw, Crompton', East: 'Saddleworth, Lees, Springhead', South: 'Hollinwood, Werneth, Failsworth', West: 'Chadderton, Westwood' };
+const keyOf = (q) => (typeof q.key === 'function' ? q.key() : q.key);
 
-$$('[data-type]').forEach((btn) => btn.addEventListener('click', () => {
-  answers.type = btn.dataset.type;
-  show('about');
-}));
+// ---- Chat window ------------------------------------------------------------
 
-$$('[data-go]').forEach((btn) => btn.addEventListener('click', () => {
-  if (btn.dataset.go === 'restart') {
-    Object.keys(answers).forEach((k) => delete answers[k]);
-    $('#about-form').reset();
-    setDistrict('Anywhere in Oldham');
-    show('path');
-  } else {
-    show(btn.dataset.go);
+const log = $('#talk-log');
+const input = $('#talk-input');
+const talk = { q: null, done: false, busy: false, ids: [], history: [], districtPicked: false };
+
+function line(who, text) {
+  const row = el('div', `msg ${who}`);
+  if (text) row.append(el('p', null, text));
+  if (who === 'ai' && text) row.append(sayButton(() => text));
+  log.append(row);
+  log.scrollTo({ top: log.scrollHeight, behavior: reduceMotion ? 'auto' : 'smooth' });
+  return row;
+}
+
+async function typing(ms = 650) {
+  const dots = el('div', 'msg ai typing');
+  dots.append(el('span'), el('span'), el('span'));
+  log.append(dots);
+  log.scrollTop = log.scrollHeight;
+  await wait(reduceMotion ? 0 : ms);
+  dots.remove();
+}
+
+// Ask the next question nobody has answered yet; when there are none left, find matches.
+async function next() {
+  const q = QUESTIONS.find((item) => !(keyOf(item) in answers) && !(item.key === 'district' && talk.districtPicked));
+  talk.q = q || null;
+  if (!q) { await findMatches(); return; }
+  $('#talk-step').textContent = `${QUESTIONS.indexOf(q) + 1} of ${QUESTIONS.length}: ${q.step}`;
+  await typing();
+  line('ai', q.say());
+  pop(q.title, q.options(), (opt) => reply(opt.label, opt.value));
+  input.placeholder = q.free ? 'Type your answer, or "skip"...' : 'Pick above or type a reply...';
+}
+
+// Someone answered: from the pop-up (value given) or typed (read it).
+async function reply(text, value) {
+  const q = talk.q;
+  closePop();
+  line('user', text);
+  if (!q) { await chat(text); return; }
+  const key = keyOf(q);
+  let v = value;
+  if (v === undefined) v = q.free ? (/^(skip|no|nothing|none|nah|n\/a)\.?$/i.test(text.trim()) ? '' : text.trim().slice(0, 1000)) : q.read(text);
+  if (v === null) {
+    await typing(400);
+    line('ai', "Sorry, I didn't quite get that. Could you pick one of these?");
+    pop('Pick one', q.options(), (opt) => reply(opt.label, opt.value));
+    return;
   }
-}));
+  if (key === 'district') setDistrict(v); else answers[key] = v;
+  if (key === 'type') document.dispatchEvent(new CustomEvent('pathly:type', { detail: { type: v } }));
+  await next();
+}
 
-$('#about-form').addEventListener('submit', async (event) => {
-  event.preventDefault();
-  const form = new FormData(event.target);
-  const fields = answers.path === 'student' ? ['hobbies', 'studies'] : ['interests', 'experience'];
-  fields.concat('district').forEach((k) => { answers[k] = String(form.get(k) || '').trim(); });
-  show('results');
-  await loadResults();
-});
+async function findMatches() {
+  $('#talk-step').textContent = 'Your options';
+  input.placeholder = 'Ask about these options...';
+  line('ai', 'Thanks. Give me a moment while I look through what Oldham has on.');
+  await typing(200);
+  const dots = el('div', 'msg ai typing');
+  dots.append(el('span'), el('span'), el('span'));
+  log.append(dots);
+  log.scrollTop = log.scrollHeight;
+  const data = await loadResults();
+  dots.remove();
+  if (!data) { line('ai', "Something went wrong finding options. Give it a minute and press Start again."); return null; }
+  showResults(data);
+  return data;
+}
 
-async function loadResults() {  // returns the API reply (or null), so the voice agent can read it out
-  const list = $('#results');
-  const status = $('#status');
-  const crisis = $('#crisis');
-  list.replaceChildren(...[1, 2, 3].map(() => el('div', 'skeleton')));
-  status.textContent = 'Finding options near you...';
-  crisis.hidden = true;
+async function loadResults() {  // returns the API reply (or null), so the voice agent can read it out too
   try {
     const res = await fetch('/api/match', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(answers),
+      body: JSON.stringify(Object.fromEntries(FIELDS.filter((k) => answers[k]).map((k) => [k, answers[k]]))),
     });
     if (!res.ok) throw new Error(res.status);
-    const data = await res.json();
-    if (data.crisis) {
-      crisis.textContent = data.crisis.message;
-      crisis.append(sayButton(() => data.crisis.message));
-      crisis.hidden = false;
-    }
-    const summary = $('#summary');
-    summary.textContent = data.summary || '';
-    summary.hidden = !data.summary;
-    const directions = $('#directions');
-    directions.replaceChildren(...(data.possible_directions || []).map((d) => {
-      const item = el('div', 'direction');
-      item.append(el('strong', null, d.title), el('span', null, d.why));
-      return item;
-    }));
-    if (directions.children.length) directions.prepend(el('p', 'eyebrow', 'Directions you could explore'));
-    directions.hidden = !directions.children.length;
-    list.replaceChildren(...data.matches.map(matchCard));
-    startChat(data);
-    document.dispatchEvent(new CustomEvent('pathly:results', { detail: { matches: data.matches } }));
-    status.textContent = data.used_ai
-      ? `${data.matches.length} options picked for you.`
-      : 'Showing a simple match because the AI is not available right now.';
-    if (!reduceMotion && window.gsap) gsap.from('.match', { y: 24, opacity: 0, stagger: 0.08, duration: 0.45, ease: 'power2.out' });
-    return data;
+    return await res.json();
   } catch (err) {
-    list.replaceChildren();
-    status.textContent = 'Something went wrong loading options. Check the server is running (uvicorn api:app) and try again.';
     return null;
   }
 }
 
-function el(tag, className, text) {
-  const node = document.createElement(tag);
-  if (className) node.className = className;
-  if (text) node.textContent = text;
-  return node;
+function showResults(data) {
+  talk.done = true;
+  if (data.crisis) {
+    const row = line('ai alert', data.crisis.message);
+    row.setAttribute('role', 'alert');
+  }
+  if (data.summary) line('ai', data.summary);
+  if ((data.possible_directions || []).length) {
+    const row = line('ai wide');
+    const dirs = el('div', 'directions');
+    dirs.append(el('p', 'eyebrow', 'Directions you could explore'));
+    data.possible_directions.forEach((d) => { const item = el('div', 'direction'); item.append(el('strong', null, d.title), el('span', null, d.why)); dirs.append(item); });
+    row.append(dirs);
+  }
+  if (data.matches.length) {
+    const row = line('ai wide');
+    const list = el('div', 'results');
+    list.append(...data.matches.map(matchCard));
+    row.append(list, el('p', 'hint', data.used_ai
+      ? `${data.matches.length} options picked for you. Real Oldham services, checked on 16 October 2026; check details before you go.`
+      : 'A simple match, because the AI is not available right now. Check details before you go.'));
+    if (!reduceMotion && window.gsap) gsap.from(row.querySelectorAll('.match'), { y: 24, opacity: 0, stagger: 0.09, duration: 0.8, ease: 'expo.out' });
+  }
+  document.dispatchEvent(new CustomEvent('pathly:results', { detail: { matches: data.matches } }));
+  talk.ids = data.matches.map((m) => m.id).slice(0, 5);
+  talk.history = [];
+  if (talk.ids.length) {
+    line('ai', 'Want to know more about any of these? Ask me anything, like what to say when you ring or which to try first.');
+    suggest(data.follow_up_questions);
+  }
+  log.scrollTo({ top: log.scrollHeight, behavior: reduceMotion ? 'auto' : 'smooth' });
 }
+
+function suggest(questions) {
+  const list = (questions || []).slice(0, 3).map((q) => ({ value: q, label: q }));
+  if (list.length) pop('Ask about your options', list, (opt) => reply(opt.label));
+}
+
+// After the matches: free chat about them through /api/chat (DeepSeek, grounded in the matched ids).
+async function chat(text) {
+  if (!talk.ids.length || talk.busy) return;
+  talk.busy = true;
+  const dots = el('div', 'msg ai typing');
+  dots.append(el('span'), el('span'), el('span'));
+  log.append(dots);
+  log.scrollTop = log.scrollHeight;
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        answers: Object.fromEntries(FIELDS.filter((k) => answers[k]).map((k) => [k, answers[k]])),
+        matched_opportunity_ids: talk.ids, history: talk.history.slice(-8), message: text,
+      }),
+    });
+    if (res.status === 429) throw new Error('busy');
+    if (!res.ok) throw new Error(res.status);
+    const data = await res.json();
+    let answer = data.reply;
+    if (data.needs_human_support) answer += ' It would help to talk this through with a trusted adult or an adviser at the Youth Hub today.';
+    dots.remove();
+    line('ai', answer);
+    talk.history.push({ role: 'user', content: text.slice(0, 1000) }, { role: 'assistant', content: answer.slice(0, 1000) });
+    suggest(data.suggested_questions);
+  } catch (err) {
+    dots.remove();
+    line('ai', err.message === 'busy'
+      ? "You've asked a lot in a short time. Give it a few minutes and try again."
+      : "Sorry, I can't answer right now. You can still use the contact details on each option.");
+  } finally {
+    talk.busy = false;
+  }
+}
+
+$('#talk-form').addEventListener('submit', (event) => {
+  event.preventDefault();
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  if (!talk.q && !talk.done) return; // still typing the first question
+  reply(text);
+});
+
+function restart() {
+  if (conversation) conversation.endSession();
+  Object.keys(answers).forEach((k) => delete answers[k]);
+  Object.assign(talk, { q: null, done: false, busy: false, ids: [], history: [], districtPicked: false });
+  closePop();
+  log.replaceChildren();
+  next();
+}
+$('#talk-restart').addEventListener('click', restart);
+
+// ---- Option pop-up (like Claude's question card) -----------------------------
+// Numbered options above the bar. Click, press the number, or move with the arrows and press Enter.
+// "Something else" (and Esc) closes it and puts the cursor in the bar.
+
+const popEl = $('#pop');
+let popPick = null;
+
+function pop(question, options, onPick) {
+  popPick = onPick;
+  $('#pop-q').textContent = question;
+  const all = options.concat({ value: undefined, label: 'Something else', desc: 'Type your own answer', other: true });
+  $('#pop-options').replaceChildren(...all.map((opt, i) => {
+    const b = el('button', `pop-opt${opt.other ? ' other' : ''}`);
+    b.type = 'button';
+    b.setAttribute('role', 'option');
+    b.append(el('span', 'pop-n', String(i + 1)), el('strong', null, opt.label));
+    if (opt.desc) b.append(el('span', 'pop-desc', opt.desc));
+    b.addEventListener('click', () => (opt.other ? closePop(true) : onPick(opt)));
+    return b;
+  }));
+  popEl.hidden = false;
+  if (!reduceMotion && window.gsap) gsap.fromTo(popEl, { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: 'expo.out' });
+}
+
+function closePop(focusBar) {
+  popEl.hidden = true;
+  popPick = null;
+  if (focusBar) input.focus();
+}
+
+document.addEventListener('keydown', (e) => {
+  if (popEl.hidden) return;
+  const opts = $$('.pop-opt', popEl);
+  const at = opts.indexOf(document.activeElement);
+  const typingInBar = document.activeElement === input && input.value;
+  if (e.key === 'Escape') { closePop(true); return; }
+  if (typingInBar) return;
+  if (/^[1-9]$/.test(e.key) && opts[e.key - 1] && (document.activeElement === input || at > -1)) { e.preventDefault(); opts[e.key - 1].click(); return; }
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    if (at === -1 && document.activeElement !== input) return;
+    e.preventDefault();
+    const n = e.key === 'ArrowDown' ? (at + 1) % opts.length : (at - 1 + opts.length) % opts.length;
+    opts[at === -1 ? 0 : n].focus();
+  }
+});
+
+// ---- Results cards ----------------------------------------------------------
 
 function matchCard(m) {
   const body = el('article', 'match');
@@ -147,74 +344,8 @@ function matchCard(m) {
   return body;
 }
 
-// ---- Ask Pathly (DeepSeek chat about the matches shown, via /api/chat) ----
-
-const askState = { ids: [], history: [], busy: false };
-
-function startChat(data) {
-  askState.ids = data.matches.map((m) => m.id).slice(0, 5);
-  askState.history = [];
-  $('#ask-log').replaceChildren();
-  suggest(data.follow_up_questions || []);
-  $('#ask').hidden = !askState.ids.length; // nothing to ask about when there are no matches (for example a crisis)
-}
-
-function suggest(questions) {
-  $('#ask-suggest').replaceChildren(...questions.slice(0, 3).map((q) => {
-    const b = el('button', 'chip', q);
-    b.type = 'button';
-    b.addEventListener('click', () => ask(q));
-    return b;
-  }));
-}
-
-function chatLine(role, text) {
-  const line = el('div', `ask-line ${role}`);
-  line.append(el('p', null, text));
-  if (role === 'assistant') line.append(sayButton(() => text));
-  $('#ask-log').append(line);
-  line.scrollIntoView({ block: 'nearest', behavior: reduceMotion ? 'auto' : 'smooth' });
-  return line;
-}
-
-async function ask(message) {
-  const text = message.trim();
-  if (!text || askState.busy) return;
-  askState.busy = true;
-  $('#ask-input').value = '';
-  chatLine('user', text);
-  const waiting = chatLine('assistant pending', 'Thinking...');
-  const fields = ['path', 'type', 'district', 'hobbies', 'studies', 'interests', 'experience'];
-  const sentAnswers = Object.fromEntries(fields.filter((k) => answers[k]).map((k) => [k, answers[k]]));
-  try {
-    const res = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ answers: sentAnswers, matched_opportunity_ids: askState.ids, history: askState.history.slice(-8), message: text }),
-    });
-    if (res.status === 429) throw new Error('busy');
-    if (!res.ok) throw new Error(res.status);
-    const data = await res.json();
-    waiting.remove();
-    let reply = data.reply;
-    if (data.needs_human_support) reply += ' It would help to talk this through with a trusted adult or an adviser at the Youth Hub today.';
-    chatLine('assistant', reply);
-    askState.history.push({ role: 'user', content: text }, { role: 'assistant', content: reply.slice(0, 1000) });
-    suggest(data.suggested_questions || []);
-  } catch (err) {
-    waiting.remove();
-    chatLine('assistant', err.message === 'busy'
-      ? "You've asked a lot in a short time. Give it a few minutes and try again."
-      : "Sorry, I can't answer right now. You can still use the contact details on each option.");
-  } finally {
-    askState.busy = false;
-  }
-}
-
-$('#ask-form').addEventListener('submit', (event) => { event.preventDefault(); ask($('#ask-input').value); });
-
-// ---- Voice (ElevenLabs, through /api/speak and /api/transcribe) ----------
-// Buttons only appear when the server has a key. Without one the site is text only.
+// ---- Listen buttons (ElevenLabs text to speech through /api/speak) -----------
+// They only show when the server has a key (body.voice-on). Without one the site is text only.
 
 const voice = { on: false, audio: null, button: null };
 
@@ -252,131 +383,30 @@ function sayButton(getText) {
   return btn;
 }
 
-function recordButton(field) {
-  const btn = el('button', 'mini rec', 'Speak');
-  const note = el('span', 'rec-note');
-  btn.type = 'button';
-  btn.setAttribute('aria-label', 'Speak your answer instead of typing');
-  let recorder = null;
-  let timer = null;
-  btn.addEventListener('click', async () => {
-    if (recorder) { recorder.stop(); return; }
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const type = ['audio/webm', 'audio/mp4', 'audio/ogg'].find((t) => MediaRecorder.isTypeSupported(t)) || '';
-      recorder = new MediaRecorder(stream, type ? { mimeType: type } : undefined);
-      const chunks = [];
-      recorder.addEventListener('dataavailable', (e) => chunks.push(e.data));
-      recorder.addEventListener('stop', async () => {
-        clearTimeout(timer);
-        stream.getTracks().forEach((t) => t.stop());
-        recorder = null;
-        btn.textContent = 'Speak'; btn.classList.remove('is-live');
-        note.textContent = 'Writing that down...';
-        const blob = new Blob(chunks, { type: (type || 'audio/webm').split(';')[0] });
-        try {
-          const res = await fetch('/api/transcribe', { method: 'POST', headers: { 'Content-Type': blob.type }, body: blob });
-          if (!res.ok) throw new Error(res.status);
-          const data = await res.json();
-          field.value = [field.value.trim(), data.text].filter(Boolean).join(' ').slice(0, Number(field.maxLength) > 0 ? field.maxLength : 1000);
-          note.textContent = data.removed.length
-            ? `Added. We took out your ${data.removed.join(' and ')} so it stays private.`
-            : (data.text ? 'Added. Check it reads right.' : "Sorry, we didn't catch that. Try again.");
-        } catch (err) {
-          note.textContent = "Voice isn't working right now. You can type instead.";
-        }
-      });
-      recorder.start();
-      timer = setTimeout(() => recorder && recorder.stop(), 60000);
-      btn.textContent = 'Stop'; btn.classList.add('is-live');
-      note.textContent = 'Listening. Press stop when you are done.';
-    } catch (err) {
-      note.textContent = "We couldn't use your microphone. You can type instead.";
-    }
-  });
-  const wrap = el('span', 'rec-row');
-  wrap.append(btn, note);
-  return wrap;
-}
+fetch('/api/voice').then((r) => (r.ok ? r.json() : {})).then((v) => {
+  if (v.enabled) { voice.on = true; document.body.classList.add('voice-on'); }
+}).catch(() => {});
 
-function setUpVoice() {
-  document.body.classList.add('voice-on');
-  // Read each question and its options aloud.
-  $$('.step').forEach((step) => {
-    const heading = $('h3', step);
-    if (!heading || step.dataset.step === 'results') return;
-    heading.after(sayButton(() => {
-      const options = $$('.choice', step).map((b) => b.textContent.trim());
-      const labels = $$('.fields:not([hidden]) label, label:not(.fields label)', step).map((l) => l.firstChild.textContent.trim());
-      return [heading.textContent, options.length ? options.join(', or ') : labels.join(' ')].join('. ');
-    }));
-  });
-  // Speak an answer instead of typing it.
-  if (navigator.mediaDevices && window.MediaRecorder) {
-    $$('#about-form textarea, #about-form input').forEach((field) => field.after(recordButton(field)));
-    $('#ask-form').after(recordButton($('#ask-input')));
-  }
-}
-
-fetch('/api/voice').then((r) => (r.ok ? r.json() : {})).then((v) => { if (v.enabled) { voice.on = true; setUpVoice(); } }).catch(() => {});
-
-// ---- Paths accordion ------------------------------------------------------
-
-const lanes = $$('.lane');
-function openLane(lane) {
-  lanes.forEach((l) => {
-    l.classList.toggle('is-open', l === lane);
-    $('.lane-head', l).setAttribute('aria-expanded', String(l === lane));
-  });
-}
-lanes.forEach((lane) => {
-  $('.lane-head', lane).addEventListener('click', () => openLane(lane));
-  lane.addEventListener('pointerenter', () => { if (matchMedia('(hover: hover) and (min-width: 761px)').matches) openLane(lane); });
-});
-$$('[data-pick]').forEach((btn) => btn.addEventListener('click', () => {
-  answers.type = btn.dataset.pick;
-  show(answers.path ? 'about' : 'path');
-  goTo('#start');
-}));
-
-// ---- Map hook (Akshita's Oldham map plugs in here; see web/README.md) -----
-
-function setDistrict(name) {
-  const select = $('#district');
-  if (![...select.options].some((o) => o.value === name)) return;
-  select.value = name;
-  answers.district = name;
-  $('#map-picked').textContent = `Showing: ${name}`;
-  $$('.district-picker button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.district === name)));
-  document.dispatchEvent(new CustomEvent('pathly:district', { detail: { district: name } }));
-}
-window.Pathly = { setDistrict, answers };
-$$('.district-picker button').forEach((b) => b.addEventListener('click', () => setDistrict(b.dataset.district)));
-$('#district').addEventListener('change', (e) => setDistrict(e.target.value));
-
-// ---- Voice (ElevenLabs Agents; agent setup in web/README.md) --------------
+// ---- The mic beside the bar ---------------------------------------------------
+// 1. With an ElevenLabs agent set up: a spoken conversation, shown in the same chat (agent setup in web/README.md).
+// 2. Otherwise dictation into the bar: the server's ElevenLabs speech to text (it removes personal details),
+//    or the browser's own speech recognition when the server has no key.
 
 const ELEVENLABS_SDK = 'https://cdn.jsdelivr.net/npm/@elevenlabs/client@1.26.0/+esm';
-const DISTRICTS = [...$('#district').options].map((o) => o.value);
 const mic = $('#mic');
-const chat = $('#chat');
+const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let conversation = null;
-let connecting = false;
+let dictation = null; // { stop() } while listening
+let micBusy = false;
 
 function setMic(state, text) {
   mic.className = state ? `mic is-${state}` : 'mic';
-  mic.setAttribute('aria-pressed', String(Boolean(state)));
-  $('#mic-label').textContent = state ? 'Stop talking to Pathly' : 'Start talking to Pathly';
+  mic.setAttribute('aria-pressed', String(state === 'listening' || state === 'speaking'));
+  $('#mic-label').textContent = state ? 'Stop the mic' : 'Talk instead of typing';
   if (text) $('#voice-status').textContent = text;
 }
 
-function addBubble(who, text) {
-  chat.hidden = false;
-  chat.append(el('p', `bubble ${who}`, text));
-  chat.scrollTop = chat.scrollHeight;
-}
-
-// The agent calls this client tool once it has heard enough. Same checks as the form, same /api/match guarantees.
+// The agent calls this client tool once it has heard enough. Same checks as typing, same /api/match guarantees.
 async function findOpportunities(params = {}) {
   const pick = (key, allowed) => (allowed.includes(params[key]) ? params[key] : undefined);
   Object.keys(answers).forEach((k) => delete answers[k]);
@@ -386,10 +416,10 @@ async function findOpportunities(params = {}) {
     if (typeof params[k] === 'string' && params[k].trim()) answers[k] = params[k].trim().slice(0, 1000);
   });
   setDistrict(pick('district', DISTRICTS) || 'Anywhere in Oldham');
-  show('results');
-  goTo('#start');
-  const data = await loadResults();
-  if (!data) return 'The opportunity search is not working right now. Suggest they use the form on the page instead.';
+  closePop();
+  talk.q = null;
+  const data = await findMatches();
+  if (!data) return 'The opportunity search is not working right now. Suggest they type in the chat instead.';
   return {
     crisis: data.crisis ? data.crisis.message : null,
     matches: data.matches.map(({ name, provider, area, why, first_step }) => ({ name, provider, area, why, first_step })),
@@ -405,40 +435,131 @@ function meter() {
   requestAnimationFrame(meter);
 }
 
-async function startVoice() {
-  connecting = true;
-  setMic('connecting', 'Connecting...');
+async function startAgent() {
+  const res = await fetch('/api/voice/session');
+  if (res.status === 503) return false; // no agent set up: use dictation instead
+  if (!res.ok) throw new Error('voice chat is unavailable right now');
+  const { signed_url: signedUrl } = await res.json();
+  await navigator.mediaDevices.getUserMedia({ audio: true });
+  const { Conversation } = await import(ELEVENLABS_SDK);
+  closePop();
+  conversation = await Conversation.startSession({
+    signedUrl,
+    clientTools: { find_opportunities: findOpportunities },
+    onConnect: () => setMic('listening', "You're talking to Pathly. Tap the mic again to stop."),
+    onDisconnect: () => { conversation = null; setMic('', 'Voice chat ended. You can keep typing.'); },
+    onModeChange: ({ mode }) => setMic(mode === 'speaking' ? 'speaking' : 'listening'),
+    onMessage: ({ source, message }) => line(source === 'user' ? 'user' : 'ai', message),
+    onError: (message) => console.warn('Voice error:', message),
+  });
+  if (!reduceMotion) requestAnimationFrame(meter);
+  return true;
+}
+
+function addToBar(text) {
+  if (!text) return;
+  input.value = [input.value.trim(), text.trim()].filter(Boolean).join(' ').slice(0, 800);
+  input.focus();
+}
+
+async function startServerDictation() {
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  const type = ['audio/webm', 'audio/mp4', 'audio/ogg'].find((t) => MediaRecorder.isTypeSupported(t)) || '';
+  const recorder = new MediaRecorder(stream, type ? { mimeType: type } : undefined);
+  const chunks = [];
+  const timer = setTimeout(() => recorder.state === 'recording' && recorder.stop(), 60000);
+  recorder.addEventListener('dataavailable', (e) => chunks.push(e.data));
+  recorder.addEventListener('stop', async () => {
+    clearTimeout(timer);
+    stream.getTracks().forEach((t) => t.stop());
+    dictation = null;
+    setMic('connecting', 'Writing that down...');
+    try {
+      const blob = new Blob(chunks, { type: (type || 'audio/webm').split(';')[0] });
+      const res = await fetch('/api/transcribe', { method: 'POST', headers: { 'Content-Type': blob.type }, body: blob });
+      if (!res.ok) throw new Error(res.status);
+      const data = await res.json();
+      addToBar(data.text);
+      setMic('', data.removed.length ? `We took out your ${data.removed.join(' and ')} so it stays private. Check it, then send.`
+        : (data.text ? 'Check it reads right, then send.' : "Sorry, we didn't catch that. Try again."));
+    } catch (err) {
+      setMic('', "Voice isn't working right now. You can type instead.");
+    }
+  });
+  recorder.start();
+  dictation = { stop: () => recorder.stop() };
+  setMic('listening', 'Listening. Tap the mic again when you are done.');
+}
+
+function startBrowserDictation() {
+  const rec = new Recognition();
+  rec.lang = 'en-GB';
+  rec.interimResults = false;
+  rec.addEventListener('result', (e) => addToBar([...e.results].map((r) => r[0].transcript).join(' ')));
+  rec.addEventListener('error', (e) => setMic('', e.error === 'not-allowed' ? 'The microphone is blocked. You can type instead.' : "Sorry, we didn't catch that. Try again."));
+  rec.addEventListener('end', () => { dictation = null; if (mic.classList.contains('is-listening')) setMic('', 'Check it reads right, then send.'); });
+  rec.start();
+  dictation = { stop: () => rec.stop() };
+  setMic('listening', "Listening. Your browser's speech service turns it into text.");
+}
+
+mic.addEventListener('click', async () => {
+  if (micBusy) return;
+  if (conversation) { conversation.endSession(); return; }
+  if (dictation) { dictation.stop(); return; }
+  micBusy = true;
+  setMic('connecting', 'Starting the mic...');
   try {
-    const res = await fetch('/api/voice/session');
-    if (!res.ok) throw new Error(res.status === 503 ? 'not set up yet' : 'service unavailable');
-    const { signed_url: signedUrl } = await res.json();
     if (!navigator.mediaDevices) throw new Error('the page needs to be opened over https'); // browsers only allow the mic on https or localhost
-    await navigator.mediaDevices.getUserMedia({ audio: true });
-    const { Conversation } = await import(ELEVENLABS_SDK);
-    conversation = await Conversation.startSession({
-      signedUrl,
-      clientTools: { find_opportunities: findOpportunities },
-      onConnect: () => setMic('listening', "I'm listening. Tap the mic again to stop."),
-      onDisconnect: () => { conversation = null; setMic('', 'Chat ended. Tap the mic to talk again.'); },
-      onModeChange: ({ mode }) => setMic(mode === 'speaking' ? 'speaking' : 'listening'),
-      onMessage: ({ source, message }) => addBubble(source === 'user' ? 'user' : 'ai', message),
-      onError: (message) => console.warn('Voice error:', message),
-    });
-    if (!reduceMotion) requestAnimationFrame(meter);
+    if (voice.on && await startAgent()) return;
+    if (voice.on && window.MediaRecorder) await startServerDictation();
+    else if (Recognition) startBrowserDictation();
+    else throw new Error("this browser can't turn speech into text");
   } catch (err) {
     conversation = null;
     const reason = err.name === 'NotAllowedError' ? 'the microphone is blocked' : err.message;
-    setMic('', `Voice chat isn't available (${reason}). You can type instead, just below.`);
+    setMic('', `The mic isn't available (${reason}). You can type instead.`);
   } finally {
-    connecting = false;
+    micBusy = false;
   }
-}
-
-mic.addEventListener('click', () => {
-  if (connecting) return;
-  if (conversation) conversation.endSession();
-  else startVoice();
 });
+if (!Recognition && !window.MediaRecorder) mic.hidden = true;
+
+// ---- What's out there accordion ------------------------------------------------
+
+const lanes = $$('.lane');
+function openLane(lane) {
+  lanes.forEach((l) => {
+    l.classList.toggle('is-open', l === lane);
+    $('.lane-head', l).setAttribute('aria-expanded', String(l === lane));
+  });
+}
+lanes.forEach((lane) => {
+  $('.lane-head', lane).addEventListener('click', () => openLane(lane));
+  lane.addEventListener('pointerenter', () => { if (matchMedia('(hover: hover) and (min-width: 761px)').matches) openLane(lane); });
+});
+// "Start with ..." answers the type question for them, then carries on in the chat.
+$$('[data-pick]').forEach((btn) => btn.addEventListener('click', () => {
+  goTo('#start');
+  if (talk.done || conversation) return;
+  answers.type = btn.dataset.pick;
+  document.dispatchEvent(new CustomEvent('pathly:type', { detail: { type: btn.dataset.pick } }));
+  line('user', `I'm after ${TYPES[btn.dataset.pick].toLowerCase()} things`);
+  if (talk.q && talk.q.key === 'type') { closePop(); next(); }
+}));
+
+// ---- Map hook (map.js draws Akshita's Oldham data; see web/README.md) ---------
+
+function setDistrict(name, fromMap) {
+  if (!DISTRICTS.includes(name)) return;
+  answers.district = name;
+  if (fromMap) talk.districtPicked = true;
+  $('#map-picked').textContent = `Showing: ${name}`;
+  $$('.district-picker button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.district === name)));
+  document.dispatchEvent(new CustomEvent('pathly:district', { detail: { district: name } }));
+}
+window.Pathly = { setDistrict: (name) => setDistrict(name, true), answers };
+$$('.district-picker button').forEach((b) => b.addEventListener('click', () => setDistrict(b.dataset.district, true)));
 
 // ---- Motion ---------------------------------------------------------------
 
@@ -468,16 +589,15 @@ if (window.gsap && window.ScrollTrigger && !reduceMotion) {
 
   gsap.timeline({ defaults: { ease: 'expo.out' } })
     .from('.headline .line > span', { yPercent: 105, duration: 1.3, stagger: 0.09 })
-    .from('.voice, .hero-main .eyebrow, .hero-side', { y: 24, opacity: 0, duration: 1, stagger: 0.08 }, 0.25)
+    .from('.hero-copy .eyebrow, .hero-side', { y: 24, opacity: 0, duration: 1, stagger: 0.08 }, 0.25)
+    .from('.talk', { y: 40, opacity: 0, duration: 1.2 }, 0.35)
     .from('.marquee', { opacity: 0, duration: 1.2 }, 0.6);
-
-  // The headline drifts up and fades a little as you scroll off the hero.
-  gsap.to('.hero-main', { yPercent: -12, opacity: 0.4, ease: 'none', scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true } });
 
   ScrollTrigger.batch('.reveal', {
     start: 'top 85%',
     onEnter: (els) => gsap.from(els, { y: 40, opacity: 0, duration: 1.1, stagger: 0.1, ease: 'expo.out', overwrite: true }),
     once: true,
   });
-  gsap.from('.choice', { y: 20, opacity: 0, stagger: 0.07, duration: 0.9, ease: 'expo.out', scrollTrigger: { trigger: '#guide', start: 'top 80%' } });
 }
+
+next();

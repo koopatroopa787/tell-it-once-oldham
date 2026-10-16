@@ -161,6 +161,7 @@
   };
 
   document.addEventListener('pathly:district', (e) => focusDistrict(e.detail.district));
+  document.addEventListener('pathly:type', () => drawDots()); // the type was picked in the chat
   document.addEventListener('pathly:results', (e) => { drawDots(); showMatches(e.detail.matches); });
   // Redraw dots when the type changes (the type buttons and the Paths lanes).
   document.querySelectorAll('[data-type], [data-pick]').forEach((b) => b.addEventListener('click', () => setTimeout(drawDots)));
