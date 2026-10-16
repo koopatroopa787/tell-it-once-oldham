@@ -14,7 +14,8 @@ def _choose(path: str) -> None:
 
 
 def render() -> None:
-    st.title("What's next for you?")
+    st.title("Pathly")
+    st.subheader("What's next for you?")
     st.write(f"Find volunteering, paid work and social opportunities in {config.BOROUGH}. It takes about two minutes.")
     left, right = st.columns(2)
     left.button("I'm a student", on_click=_choose, args=("student",), use_container_width=True, type="primary")

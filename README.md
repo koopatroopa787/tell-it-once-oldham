@@ -1,4 +1,8 @@
-# Tell It Once
+# Pathly
+
+Pathly helps young people in Oldham find their next step: volunteering, paid work or social opportunities. They answer a few questions about themselves, and AI matches them to verified local opportunities, each with a link and contact details. Run it with `streamlit run app.py`.
+
+## Tell It Once (earlier connector tool, `connector_app.py`)
 
 An AI copilot for the community connectors and volunteers who staff Greater Manchester's Live Well Centres and Spaces.
 

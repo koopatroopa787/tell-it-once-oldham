@@ -1,4 +1,4 @@
-# Tell It Once (Oldham): project guide and build plan
+# Pathly (Oldham): project guide and build plan
 
 This file is read by Claude Code at the start of every session. It explains what we are building, the rules, and the ordered plan for the rest of the hackathon.
 
@@ -15,9 +15,9 @@ Tell It Once is an AI copilot for Oldham's front-line workers: Live Well connect
 
 Hackathon: Green Circles Manchester, "Build for Greater Manchester". Our borough is Oldham. Judging: problem understanding 25%, impact 25%, feasibility and adoption 20%, use of AI 15%, responsible design 15%.
 
-## Current direction: young people's flow (from the team wireframe)
+## Current direction: Pathly, the young people's flow (from the team wireframe)
 
-This supersedes the phases below where they conflict. The app is now aimed at young people using it themselves. `streamlit run app.py` runs it; the earlier connector tool is still in `connector_app.py`.
+Product name: **Pathly**. This supersedes the phases below where they conflict; "Tell It Once" now refers only to the earlier connector tool. The app is now aimed at young people using it themselves. `streamlit run app.py` runs it; the earlier connector tool is still in `connector_app.py`.
 
 Flow: Page 1 Student or Exploring for options -> Page 2 Voluntary, Paid work or Social work -> Page 3 (student: hobbies and current studies; exploring: interests and past work or experience, plus district) -> Results (AI matches with link, phone and contact).
 
