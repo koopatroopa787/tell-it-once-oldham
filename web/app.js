@@ -291,7 +291,8 @@ fileInput.addEventListener('change', async () => {
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.detail || "I couldn't read that file.");
     dots.remove();
-    answers.experience = [answers.experience, data.text].filter(Boolean).join('\n').slice(0, 1000);
+    const answerField = !talk.done && talk.q && keyOf(talk.q) === 'studies' ? 'studies' : 'experience';
+    answers[answerField] = [answers[answerField], data.text].filter(Boolean).join('\n').slice(0, 1000);
     const removed = data.removed.length ? ` I took out your ${listOf(data.removed)} first.` : '';
     line('ai', `Got it, I've read it.${removed} Nothing is saved, it's only used for this chat.`);
     read = true;
