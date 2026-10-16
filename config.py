@@ -20,6 +20,15 @@ DEEPSEEK_BASE_URL: str = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.co
 MATCH_MODEL: str = os.getenv("MATCH_MODEL", "deepseek-flash")
 MATCH_TIMEOUT: float = float(os.getenv("MATCH_TIMEOUT", "30"))
 
+# ElevenLabs voice (read results aloud, speak your answers). Without a key the site is text only.
+ELEVENLABS_API_KEY: str = os.getenv("ELEVENLABS_API_KEY", "")
+ELEVENLABS_VOICE_ID: str = os.getenv("ELEVENLABS_VOICE_ID", "JBFqnCBsd6RMkjVDRZzb")
+ELEVENLABS_TTS_MODEL: str = os.getenv("ELEVENLABS_TTS_MODEL", "eleven_multilingual_v2")
+ELEVENLABS_STT_MODEL: str = os.getenv("ELEVENLABS_STT_MODEL", "scribe_v2")
+VOICE_TIMEOUT: float = float(os.getenv("VOICE_TIMEOUT", "30"))
+# Voice calls use your paid ElevenLabs credits, so each visitor gets this many per 10 minutes.
+VOICE_LIMIT_PER_10_MIN: int = int(os.getenv("VOICE_LIMIT_PER_10_MIN", "40"))
+
 # Websites allowed to call the API, comma separated. Defaults cover the Vite and Create React App dev servers.
 ALLOWED_ORIGINS: list[str] = [
     o.strip() for o in os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000").split(",") if o.strip()

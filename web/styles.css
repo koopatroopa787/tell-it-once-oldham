@@ -139,6 +139,37 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .district-picker button { position: absolute; left: var(--x); top: var(--y); transform: translate(-50%, -50%); min-height: 44px; padding: 0 16px; border: 2px solid var(--ink);
   background: var(--cream); font: 400 18px/1 var(--display); text-transform: uppercase; cursor: pointer; transition: background .2s; }
 .district-picker button:hover, .district-picker button[aria-pressed="true"] { background: var(--orange); }
+.map-slot:has(.map-canvas) { background: var(--paper); min-height: 0; }
+.map-canvas { height: clamp(360px, 52vh, 560px); background: var(--cream); }
+.map-canvas .leaflet-control-attribution { font: 400 10px/1.4 var(--mono); background: rgba(255, 250, 243, .9); }
+.map-canvas .leaflet-bar a { color: var(--ink); border-color: var(--line); }
+.map-district { display: inline-block; transform: translate(-50%, -50%); padding: 6px 10px; border: 2px solid var(--ink); background: var(--cream);
+  font: 400 15px/1 var(--display); text-transform: uppercase; white-space: nowrap; cursor: pointer; }
+.map-district.is-on, .map-district:hover { background: var(--orange); }
+.map-pin { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--ink); background: var(--c);
+  color: var(--ink); font: 600 14px/1 var(--mono); box-shadow: 2px 2px 0 var(--ink); }
+.map-pin[style*="--blue"] { color: #fff; }
+.map-pop strong { font: 400 18px/1.1 var(--display); text-transform: uppercase; }
+.map-pop p { margin: 6px 0; font: 400 13px/1.4 var(--sans); }
+.map-pop .map-pop-meta { font: 400 11px/1.4 var(--mono); }
+.leaflet-container a.leaflet-popup-close-button { color: var(--ink); }
+.district-row { display: flex; flex-wrap: wrap; border-top: 2px solid var(--ink); }
+.district-row button { flex: 1 1 auto; min-height: 48px; padding: 0 14px; border: 0; border-right: 1px solid var(--ink); background: var(--cream);
+  font: 400 16px/1 var(--display); text-transform: uppercase; cursor: pointer; }
+.district-row button:last-child { border-right: 0; }
+.district-row button:hover, .district-row button[aria-pressed="true"] { background: var(--orange); }
+
+/* Small actions on results and questions: listen, speak, see on map */
+.match-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-top: 10px; }
+.mini { display: none; min-height: 36px; padding: 0 12px; border: 2px solid var(--ink); background: var(--cream); cursor: pointer;
+  font: 400 12px/1 var(--mono); text-transform: uppercase; }
+.mini:hover { background: var(--peach); }
+.match-actions .mini:not(.say), .voice-on .mini { display: inline-flex; align-items: center; }
+.step > .say { margin: -12px 0 20px; }
+.alert .say { margin-left: 12px; vertical-align: middle; color: var(--ink); }
+.mic-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 8px; font-weight: 400; }
+.mic.is-live { background: var(--ember); color: #fff; }
+.mic-note { font: 400 12px/1.4 var(--mono); }
 
 /* How it works */
 .how-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
