@@ -14,6 +14,14 @@ from directory import Directory
 from matcher import Matcher
 
 
+def _stop_for_api_error(stage: str, error: Exception) -> None:
+    error_name = type(error).__name__
+    status_code = getattr(error, "status_code", None)
+    if isinstance(status_code, int):
+        raise SystemExit(f"DeepSeek {stage} request failed with HTTP {status_code} ({error_name}).") from None
+    raise SystemExit(f"DeepSeek {stage} request failed ({error_name}).") from None
+
+
 def main() -> None:
     if not config.DEEPSEEK_API_KEY:
         raise SystemExit("DEEPSEEK_API_KEY is not available to this workflow.")
@@ -26,19 +34,27 @@ def main() -> None:
         "experience": "helping at a community event",
         "district": "Central",
     }
-    analysis = matcher.run(answers)
-    if not analysis.used_ai or not analysis.matches:
-        raise SystemExit("DeepSeek matching did not return a grounded AI result.")
+    try:
+        raw_analysis = matcher._call_analysis(answers)
+        analysis = matcher._validate_analysis(raw_analysis, answers["type"])
+    except Exception as error:  # noqa: BLE001 - process boundary must report a safe category only
+        _stop_for_api_error("matching", error)
+    if not analysis.matches:
+        raise SystemExit("DeepSeek matching returned no approved directory matches.")
 
     opportunity_ids = [item["opportunity_id"] for item in analysis.matches]
-    reply = matcher.chat(
-        answers=answers,
-        matched_opportunity_ids=opportunity_ids,
-        history=[],
-        message="What is one useful thing I can do this week?",
-    )
-    if not reply.used_ai or not reply.reply:
-        raise SystemExit("DeepSeek chat did not return a grounded AI response.")
+    try:
+        raw_reply = matcher._call_chat(
+            answers,
+            opportunity_ids,
+            [],
+            "What is one useful thing I can do this week?",
+        )
+        reply = matcher._validate_chat(raw_reply, opportunity_ids)
+    except Exception as error:  # noqa: BLE001 - process boundary must report a safe category only
+        _stop_for_api_error("chat", error)
+    if not reply.reply:
+        raise SystemExit("DeepSeek chat returned an empty response.")
 
     print("DeepSeek matching and chat smoke check passed.")
 

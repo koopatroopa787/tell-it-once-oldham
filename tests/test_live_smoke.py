@@ -23,13 +23,19 @@ def test_live_smoke_exercises_matching_and_chat(monkeypatch, capsys) -> None:
         def __init__(self, _directory) -> None:
             calls.append("init")
 
-        def run(self, _answers):
+        def _call_analysis(self, _answers):
             calls.append("match")
-            return SimpleNamespace(used_ai=True, matches=[{"opportunity_id": "work-apprenticeships"}])
+            return {"matches": [{"opportunity_id": "work-apprenticeships"}]}
 
-        def chat(self, **_kwargs):
+        def _validate_analysis(self, raw, _opportunity_type):
+            return SimpleNamespace(matches=raw["matches"])
+
+        def _call_chat(self, *_args):
             calls.append("chat")
-            return SimpleNamespace(used_ai=True, reply="Start with one application.")
+            return {"reply": "Start with one application."}
+
+        def _validate_chat(self, raw, _opportunity_ids):
+            return SimpleNamespace(reply=raw["reply"])
 
     monkeypatch.setattr(verify_deepseek.config, "DEEPSEEK_API_KEY", "test-secret")
     monkeypatch.setattr(verify_deepseek.Directory, "load", lambda *_args: object())
@@ -39,3 +45,13 @@ def test_live_smoke_exercises_matching_and_chat(monkeypatch, capsys) -> None:
 
     assert calls == ["init", "match", "chat"]
     assert "smoke check passed" in capsys.readouterr().out
+
+
+def test_live_smoke_reports_only_safe_api_failure_details() -> None:
+    error = RuntimeError("response body that should not be logged")
+    error.status_code = 401
+
+    with pytest.raises(SystemExit, match=r"HTTP 401 \(RuntimeError\)") as raised:
+        verify_deepseek._stop_for_api_error("matching", error)
+
+    assert "response body" not in str(raised.value)
