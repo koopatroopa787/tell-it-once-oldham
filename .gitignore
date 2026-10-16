@@ -1,16 +1,7 @@
-# Secrets
-.env
-
-# Python
-__pycache__/
-*.pyc
-.venv/
-.pytest_cache/
-
-# Runtime data (demo cases and cached model responses are per machine)
-data/enquiries.json
-data/response_cache.json
-data/bias_report.md
-
-# Local knowledge graph (graphify)
-graphify-out/
+/node_modules
+/.next
+/.test-dist
+/test-results
+*.tsbuildinfo
+.env*
+!.env.example
