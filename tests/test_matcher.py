@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import os
 from types import SimpleNamespace
+
+import pytest
 
 import config
 from directory import Directory
@@ -41,6 +44,10 @@ def _analysis(matches: list[dict]) -> dict:
     }
 
 
+@pytest.mark.skipif(
+    any(os.getenv(k) for k in ("DEEPSEEK_MODEL", "MATCH_MODEL", "DEEPSEEK_BASE_URL")),
+    reason="this .env overrides the defaults (for example a LiteLLM proxy on the demo server)",
+)
 def test_deepseek_defaults_use_official_server_side_endpoint() -> None:
     assert config.DEEPSEEK_MODEL == "deepseek-flash"
     assert config.DEEPSEEK_BASE_URL == "https://api.deepseek.com/anthropic"
