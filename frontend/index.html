@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pathly Oldham</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Mono:wght@500&display=swap">
+<!-- build:inline-css -->
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="vendor/leaflet.css">
+<link rel="stylesheet" href="vendor/MarkerCluster.css">
+<link rel="stylesheet" href="styles.css">
+<!-- /build:inline-css -->
+</head>
+<body>
+<div class="app">
+  <header class="bar">
+    <div class="brand">
+      <div class="mark" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13 8 3l5 10M5.5 9h5"/></svg></div>
+      <div><h1>Pathly</h1><small>Volunteering, work and things to do near you in Oldham</small></div>
+    </div>
+    <label class="helper" for="helperToggle">
+      <span class="switch"><input type="checkbox" id="helperToggle"><span></span></span>
+      I'm helping someone else
+    </label>
+  </header>
+  <main class="shell">
+    <section class="panel" aria-label="Questions and results">
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" id="tabFind" aria-selected="true" aria-controls="pbody">Find my next step</button>
+        <button class="tab" role="tab" id="tabExplore" aria-selected="false" aria-controls="pbody">Explore the map</button>
+      </div>
+      <div class="pbody" id="pbody" role="tabpanel"></div>
+      <div class="pfoot" id="pfoot"></div>
+    </section>
+    <section class="mapwrap" aria-label="Map of Oldham">
+      <div id="map"></div>
+      <div class="ov ov-top">
+        <div class="search">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+          <input type="search" id="q" placeholder="Search places, stops or areas" autocomplete="off" aria-label="Search the map" aria-controls="sres">
+          <ul class="sres" id="sres" hidden></ul>
+        </div>
+        <div class="lchips" id="lchips"></div>
+        <div class="mbanner" id="mbanner" hidden><span id="mbannerText"></span><button id="mbannerBtn">Show all places</button></div>
+      </div>
+      <div class="ov ov-br">
+        <button class="mbtn" id="zin" aria-label="Zoom in"><svg width="16" height="16" viewBox="0 0 16 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg></button>
+        <button class="mbtn" id="zout" aria-label="Zoom out"><svg width="16" height="16" viewBox="0 0 16 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8h10"/></svg></button>
+        <button class="mbtn" id="zreset" aria-label="Show all of Oldham"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10"/></svg></button>
+      </div>
+      <div class="ov ov-bl"><div class="legend" id="legend"></div></div>
+    </section>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
+<!-- build:inline-js -->
+<script src="config.js"></script>
+<script src="data/oldham-map.js"></script>
+<script src="data/safety-rules.js"></script>
+<script src="app.js"></script>
+<!-- /build:inline-js -->
+</body>
+</html>
