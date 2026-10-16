@@ -15,6 +15,23 @@ Tell It Once is an AI copilot for Oldham's front-line workers: Live Well connect
 
 Hackathon: Green Circles Manchester, "Build for Greater Manchester". Our borough is Oldham. Judging: problem understanding 25%, impact 25%, feasibility and adoption 20%, use of AI 15%, responsible design 15%.
 
+## Current direction: young people's flow (from the team wireframe)
+
+This supersedes the phases below where they conflict. The app is now aimed at young people using it themselves. `streamlit run app.py` runs it; the earlier connector tool is still in `connector_app.py`.
+
+Flow: Page 1 Student or Exploring for options -> Page 2 Voluntary, Paid work or Social work -> Page 3 (student: hobbies and current studies; exploring: interests and past work or experience, plus district) -> Results (AI matches with link, phone and contact).
+
+One owner per file so merges do not conflict:
+
+| Slot | Files |
+| --- | --- |
+| Pages 1 and 2 | `flow/page1_path.py`, `flow/page2_type.py` |
+| Page 3 questions | `flow/page3_student.py`, `flow/page3_explore.py` |
+| AI matching and results | `matcher.py`, `flow/results.py` |
+| Real Oldham opportunities | `data/opportunities.json` (keep the fields; leave blank rather than guess) |
+
+Conventions: every page module exposes `render()`; move between pages with `go("<step>")` from `flow/__init__.py`; store answers in `answers()`. A new page = new module + one line in `PAGES` in `app.py`. `matcher.py` redacts PII, forces a tool call, drops ids not in the list, and falls back to a no-AI match, so the app runs without an API key. Open question: does "Social work" mean social care careers or community and social activities? The sample data has both.
+
 ## Non-negotiable rules
 
 - Never use real resident data. Personas and letter images are synthetic and marked SAMPLE.

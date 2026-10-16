@@ -1,0 +1,122 @@
+{
+  "note": "SAMPLE DATA for the hackathon demo. Replace with real Oldham opportunities and verify every link, phone number and contact before showing it to anyone. Leave a field blank rather than guess. category is one of voluntary, paid_work, social_work. area is one of Central, East, North, South, West or 'All Oldham'. The top-level key is 'services' so directory.py can load it unchanged.",
+  "services": [
+    {
+      "id": "vol-community-groups",
+      "name": "Volunteer with a local community group (sample)",
+      "provider": "Action Together",
+      "category": "voluntary",
+      "area": "All Oldham",
+      "description": "Find volunteering roles with community groups and charities across {borough}, from sports clubs to food projects.",
+      "who_it_is_for": "Anyone 16 or over. No experience needed.",
+      "how_to_access": "Browse roles online or drop in and ask for a chat about what suits you.",
+      "link": "https://www.actiontogether.org.uk",
+      "phone": "",
+      "contact": ""
+    },
+    {
+      "id": "vol-food-project",
+      "name": "Food project volunteer (sample)",
+      "provider": "Local food bank",
+      "category": "voluntary",
+      "area": "Central",
+      "description": "Help sort donations and welcome visitors a few hours a week. Good for teamwork and a reference.",
+      "who_it_is_for": "16 and over, flexible hours.",
+      "how_to_access": "Ask at the next session or send a message to say you are interested.",
+      "link": "",
+      "phone": "",
+      "contact": ""
+    },
+    {
+      "id": "vol-dofe",
+      "name": "Duke of Edinburgh's Award (sample)",
+      "provider": "DofE",
+      "category": "voluntary",
+      "area": "All Oldham",
+      "description": "Volunteering, a skill, physical activity and an expedition, recognised by employers and colleges.",
+      "who_it_is_for": "14 to 24 year olds.",
+      "how_to_access": "Ask your school, college or youth centre if they run it.",
+      "link": "https://www.dofe.org",
+      "phone": "",
+      "contact": ""
+    },
+    {
+      "id": "work-get-oldham-working",
+      "name": "Get {borough} Working (sample)",
+      "provider": "{borough} Council",
+      "category": "paid_work",
+      "area": "All Oldham",
+      "description": "Free help to find a job, apprenticeship or training, with a named adviser and links to local employers.",
+      "who_it_is_for": "{borough} residents looking for work, including young people not in education or work.",
+      "how_to_access": "Book a chat with an adviser.",
+      "link": "https://www.oldham.gov.uk",
+      "phone": "",
+      "contact": ""
+    },
+    {
+      "id": "work-apprenticeships",
+      "name": "Find an apprenticeship",
+      "provider": "GOV.UK",
+      "category": "paid_work",
+      "area": "All Oldham",
+      "description": "Search paid apprenticeships near {borough}, from engineering and construction to care and business.",
+      "who_it_is_for": "16 and over, not in full-time education.",
+      "how_to_access": "Search by postcode district and set up alerts.",
+      "link": "https://www.findapprenticeship.service.gov.uk",
+      "phone": "",
+      "contact": ""
+    },
+    {
+      "id": "work-careers-advice",
+      "name": "National Careers Service",
+      "provider": "National Careers Service",
+      "category": "paid_work",
+      "area": "All Oldham",
+      "description": "Free careers advice, CV help and skills checks, online or by phone.",
+      "who_it_is_for": "13 and over.",
+      "how_to_access": "Use the website or ask to speak to an adviser.",
+      "link": "https://nationalcareers.service.gov.uk",
+      "phone": "",
+      "contact": ""
+    },
+    {
+      "id": "social-youth-clubs",
+      "name": "{borough} youth clubs and activities (sample)",
+      "provider": "{borough} Youth Service",
+      "category": "social_work",
+      "area": "North",
+      "description": "Evening clubs, sport, music and trips with youth workers. A good way to meet people and build confidence.",
+      "who_it_is_for": "11 to 19, or up to 25 with additional needs.",
+      "how_to_access": "Turn up to a session; no need to book.",
+      "link": "",
+      "phone": "",
+      "contact": ""
+    },
+    {
+      "id": "social-care-taster",
+      "name": "Social care careers taster (sample)",
+      "provider": "{borough} Council",
+      "category": "social_work",
+      "area": "West",
+      "description": "Find out what working in care and social work is like, with routes into apprenticeships and paid roles.",
+      "who_it_is_for": "16 and over, interested in helping people.",
+      "how_to_access": "Register interest for the next taster day.",
+      "link": "",
+      "phone": "",
+      "contact": ""
+    },
+    {
+      "id": "social-young-carers",
+      "name": "Young carers group (sample)",
+      "provider": "Local carers charity",
+      "category": "social_work",
+      "area": "East",
+      "description": "Meet other young people who care for someone at home, get a break, and get support with school or work.",
+      "who_it_is_for": "Young people who help look after a family member.",
+      "how_to_access": "Ask for an introduction or self-refer.",
+      "link": "",
+      "phone": "",
+      "contact": ""
+    }
+  ]
+}

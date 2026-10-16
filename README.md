@@ -35,7 +35,10 @@ If responses feel slow, set `ANTHROPIC_MODEL=claude-haiku-5-5` in `.env`.
 
 | File | What it does |
 | --- | --- |
-| `app.py` | The Streamlit app: Conversation, Handovers, Neighbourhood insights and About views |
+| `app.py` | The young people's app: routes between the pages in `flow/` |
+| `flow/` | One module per page: path, opportunity type, questions, results |
+| `matcher.py` | Matches answers to `data/opportunities.json`, with a no-AI fallback |
+| `connector_app.py` | The earlier connector-facing app: Conversation, Handovers, Neighbourhood insights and About views |
 | `triage.py` | Prompt, structured tool call, validation against the directory, offline cache |
 | `safety.py` | PII redaction and fixed crisis rules, both run before the AI sees anything |
 | `directory.py` | Loads the service directory and formats it for the prompt |

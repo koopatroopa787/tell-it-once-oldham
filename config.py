@@ -16,6 +16,7 @@ MAX_TOKENS: int = int(os.getenv("MAX_TOKENS", "4000"))
 
 DATA_DIR = ROOT / "data"
 SERVICES_PATH = DATA_DIR / "services.json"
+OPPORTUNITIES_PATH = DATA_DIR / "opportunities.json"
 PERSONAS_PATH = DATA_DIR / "personas.json"
 ENQUIRIES_PATH = DATA_DIR / "enquiries.json"
 CACHE_PATH = DATA_DIR / "response_cache.json"
