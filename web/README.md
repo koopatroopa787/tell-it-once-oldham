@@ -15,7 +15,9 @@ Run from the repo root: `uvicorn api:app --reload`, then open http://127.0.0.1:8
 
 The mic at the top of the hero opens a voice conversation with an ElevenLabs agent, and both sides appear as chat bubbles. The agent asks the same questions as the form, then calls the `find_opportunities` client tool, which runs the normal `/api/match` (redaction, crisis check, verified opportunities only) and shows the result cards on the page. The browser never sees the API key: `GET /api/voice/session` returns a 15-minute signed URL. Without the two keys the mic says voice is not set up and the form still works.
 
-Set up once, in the ElevenLabs dashboard (Agents):
+Quickest setup: put `ELEVENLABS_API_KEY` in the repo-root `.env` (a key with Text to Speech, Speech to Text and Agents write access), then run `python scripts/setup_voice_agent.py`. It creates the agent below with its `find_opportunities` tool and authentication on, and writes `ELEVENLABS_AGENT_ID` to `.env`. Restart uvicorn.
+
+Or set it up by hand, once, in the ElevenLabs dashboard (Agents):
 
 1. Create an agent. Under Security, turn on authentication (so only signed URLs can start a call).
 2. First message: `Hi, I'm Pathly. I help young people in Oldham find volunteering, jobs and things to get involved in. Are you studying at the moment, or exploring your options?`
