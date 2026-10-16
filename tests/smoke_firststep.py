@@ -1,7 +1,12 @@
+import os
+from urllib.parse import urlsplit
+
 from playwright.sync_api import sync_playwright
 
 
-BASE_URL = "http://localhost:3000"
+BASE_URL = os.environ.get("FIRSTSTEP_BASE_URL", "http://localhost:3000")
+base_parts = urlsplit(BASE_URL)
+BASE_ORIGIN = f"{base_parts.scheme}://{base_parts.netloc}"
 
 
 def choose_alex(page):
@@ -37,7 +42,9 @@ with sync_playwright() as playwright:
     passport.add_init_script("window.print = () => { window.__PRINT_CALLED__ = true; }")
     choose_alex(passport)
     passport.get_by_role("button", name="Make my Passport").click()
-    passport.context.grant_permissions(["clipboard-read", "clipboard-write"], origin=BASE_URL)
+    passport.context.grant_permissions(
+        ["clipboard-read", "clipboard-write"], origin=BASE_ORIGIN
+    )
     include_barrier = passport.get_by_role("checkbox", name="Include my barrier in printed and copied plans")
     assert not include_barrier.is_checked()
     passport.get_by_role("button", name="Copy plan").click()
