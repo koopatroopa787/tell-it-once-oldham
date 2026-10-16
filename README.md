@@ -8,16 +8,21 @@ Pathly will be a live website with a React front end (design still to be decided
 
 ```bash
 pip install -r requirements.txt
+cp .env.example .env                 # then paste your DeepSeek and ElevenLabs keys
 uvicorn api:app --reload
 ```
 
-The demo website in `web/` is served at http://localhost:8000/ (see `web/README.md`). Interactive docs are at http://localhost:8000/docs. Matching uses DeepSeek (`DEEPSEEK_API_KEY` and `MATCH_MODEL` in `.env`), the same provider as the chatbot. Without a key it still answers, using a simple match instead of the AI. Set `ALLOWED_ORIGINS` in `.env` to the website's address once it is deployed; the default allows the local React dev servers on ports 5173 and 3000.
+The demo website in `web/` is served at http://localhost:8000/ (see `web/README.md`). Interactive docs are at http://localhost:8000/docs. Matching and the "Ask Pathly" chat use DeepSeek (`DEEPSEEK_API_KEY` and `DEEPSEEK_MODEL` in `.env`). Voice uses ElevenLabs (`ELEVENLABS_API_KEY`). Without keys it still answers, using a simple match instead of the AI, and the site is text only. Set `ALLOWED_ORIGINS` in `.env` to the website's address once it is deployed; the default allows the local React dev servers on ports 5173 and 3000.
 
 | Endpoint | What it does |
 | --- | --- |
 | `GET /api/health` | Returns `{"status": "ok"}` |
 | `GET /api/questions` | The two paths, three opportunity types, the questions for each path and the district list, so the site never hard-codes them |
-| `POST /api/match` | Takes `path`, `type`, `district` and the free-text answers; returns `crisis` (fixed safety information or `null`), `matches` (name, provider, area, why it fits, first step, phone, contact, link) and `used_ai` |
+| `POST /api/match` | Takes `path`, `type`, `district` and the free-text answers; returns `crisis` (fixed safety information or `null`), `summary`, `possible_directions`, `matches` (name, provider, area, why it fits, first step, barrier tip, phone, contact, link), `follow_up_questions`, `confidence` and `used_ai` |
+| `POST /api/chat` | Ask Pathly: `{answers, matched_opportunity_ids, history, message}`; answers only about the matches shown, with crisis messages bypassing the AI. 30 questions per visitor per 10 minutes |
+| `GET /api/voice` | `{"enabled": true}` when an ElevenLabs key is set, so the site shows the Listen and Speak buttons |
+| `POST /api/speak` | `{text}` (up to 800 characters) to MP3 audio through ElevenLabs |
+| `POST /api/transcribe` | Raw audio in the body (for example `audio/webm` from the browser) to `{text, removed}`, with personal details removed. Voice calls are limited per visitor to protect credits |
 
 Unknown fields, unknown districts and answers over 1,000 characters are rejected with a 422.
 
@@ -74,7 +79,7 @@ Run the offline tests with `pytest`. They need no API key.
 1. **Set the borough.** Change `BOROUGH` in `.env`. It flows through the API, the prompts and the opportunity list.
 2. **Swap in real opportunities.** Edit `data/opportunities.json`. Keep the same fields, keep `id` short and unique, and leave a field blank rather than guess. `{borough}` in any field is replaced automatically.
 
-If responses feel slow, set `ANTHROPIC_MODEL=claude-haiku-5-5` in `.env`.
+Pathly uses `DEEPSEEK_MODEL=deepseek-flash`. Only the Tell It Once modules (`triage.py`, `eval_bias.py`) still use Anthropic.
 
 ## What is in here
 
@@ -82,7 +87,9 @@ If responses feel slow, set `ANTHROPIC_MODEL=claude-haiku-5-5` in `.env`.
 | --- | --- |
 | `api.py` | The HTTP API the website calls |
 | `questions.py` | The paths, opportunity types, questions and districts the site shows |
-| `matcher.py` | Matches answers to `data/opportunities.json`, with a no-AI fallback |
+| `matcher.py` | DeepSeek analysis and grounded follow-up chat, with a no-AI fallback |
+| `deepseek_gateway.py` | Creates the server-side DeepSeek client; the browser never receives the key |
+| `voice.py` | ElevenLabs text to speech and speech to text, called only from the server |
 | `safety.py` | PII redaction and fixed crisis rules, both run before the AI sees anything |
 | `directory.py` | Loads an opportunity or service list and formats it for the prompt |
 | `data/` | 16 real Oldham opportunities (`opportunities.json`, checked 16 Oct 2026), plus the Tell It Once sample services and personas |

@@ -10,9 +10,17 @@ Run from the repo root: `uvicorn api:app --reload`, then open http://127.0.0.1:8
 | `styles.css` | Colour tokens at the top: shades of orange plus one complement (petrol blue). Accent classes `c-orange`, `c-peach`, `c-sand`, `c-blue`, `c-sky` set `--c` (colour) and `--on` (readable text on it). Category colours: voluntary peach, paid work blue, social sand |
 | `app.js` | Flow logic, results rendering, the map hook and all motion. Motion is skipped when the visitor asks for reduced motion |
 
-## Map contract (for Akshita)
+## Map
 
-Mount the Oldham map inside `<div id="oldham-map">` in the `#map` section, replacing the placeholder district buttons.
+`map.js` draws Akshita's Oldham map data (`frontend/data/oldham-map.js`, served at `/explore/data/`) inside `<div id="oldham-map">`, in this site's colours with no tile server. Dots are council directory places for the chosen type and area, inside the borough only; matches appear as numbered pins, and result cards get a "See it on the map" button. The full map app is at `/explore/`. If Leaflet or the data fails to load, the plain district buttons stay.
+
+## Voice and chat
+
+When the server has an ElevenLabs key, questions, results, crisis messages and chat replies get a Listen button, and each answer box gets a Speak button (recorded in the browser, transcribed on the server). Ask Pathly under the results calls `POST /api/chat`.
+
+## Map contract
+
+The contract `map.js` follows, for any replacement map:
 
 - When someone picks an area, call `window.Pathly.setDistrict(name)` with one of `Central`, `East`, `North`, `South`, `West` or `Anywhere in Oldham`. It updates the form, the "Showing:" label and the answers sent to the matcher.
 - To react to picks made elsewhere (the form's dropdown), listen for `document.addEventListener('pathly:district', (e) => e.detail.district)`.

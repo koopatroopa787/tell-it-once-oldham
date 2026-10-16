@@ -14,11 +14,13 @@ BOROUGH: str = os.getenv("BOROUGH", "Oldham")
 MODEL: str = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-5-5")
 MAX_TOKENS: int = int(os.getenv("MAX_TOKENS", "4000"))
 
-# Pathly's matcher uses DeepSeek, the same provider as the chatbot. MODEL above is for the Tell It Once modules.
+# Pathly uses DeepSeek through its Anthropic-compatible server. The key stays
+# server-side; never expose it through Streamlit state or browser JavaScript.
 DEEPSEEK_API_KEY: str = os.getenv("DEEPSEEK_API_KEY", "")
-DEEPSEEK_BASE_URL: str = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
-MATCH_MODEL: str = os.getenv("MATCH_MODEL", "deepseek-flash")
-MATCH_TIMEOUT: float = float(os.getenv("MATCH_TIMEOUT", "30"))
+DEEPSEEK_MODEL: str = os.getenv("DEEPSEEK_MODEL", "deepseek-flash")
+DEEPSEEK_BASE_URL: str = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com/anthropic")
+DEEPSEEK_MAX_TOKENS: int = int(os.getenv("DEEPSEEK_MAX_TOKENS", "1400"))
+DEEPSEEK_TIMEOUT_SECONDS: float = float(os.getenv("DEEPSEEK_TIMEOUT_SECONDS", "15"))
 
 # ElevenLabs voice (read results aloud, speak your answers). Without a key the site is text only.
 ELEVENLABS_API_KEY: str = os.getenv("ELEVENLABS_API_KEY", "")
@@ -28,6 +30,8 @@ ELEVENLABS_STT_MODEL: str = os.getenv("ELEVENLABS_STT_MODEL", "scribe_v2")
 VOICE_TIMEOUT: float = float(os.getenv("VOICE_TIMEOUT", "30"))
 # Voice calls use your paid ElevenLabs credits, so each visitor gets this many per 10 minutes.
 VOICE_LIMIT_PER_10_MIN: int = int(os.getenv("VOICE_LIMIT_PER_10_MIN", "40"))
+# Ask Pathly chat questions per visitor per 10 minutes, to protect the DeepSeek budget.
+CHAT_LIMIT_PER_10_MIN: int = int(os.getenv("CHAT_LIMIT_PER_10_MIN", "30"))
 
 # Websites allowed to call the API, comma separated. Defaults cover the Vite and Create React App dev servers.
 ALLOWED_ORIGINS: list[str] = [

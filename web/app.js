@@ -75,7 +75,19 @@ async function loadResults() {
       crisis.append(sayButton(() => data.crisis.message));
       crisis.hidden = false;
     }
+    const summary = $('#summary');
+    summary.textContent = data.summary || '';
+    summary.hidden = !data.summary;
+    const directions = $('#directions');
+    directions.replaceChildren(...(data.possible_directions || []).map((d) => {
+      const item = el('div', 'direction');
+      item.append(el('strong', null, d.title), el('span', null, d.why));
+      return item;
+    }));
+    if (directions.children.length) directions.prepend(el('p', 'kicker', 'Directions you could explore'));
+    directions.hidden = !directions.children.length;
     list.replaceChildren(...data.matches.map(matchCard));
+    startChat(data);
     document.dispatchEvent(new CustomEvent('pathly:results', { detail: { matches: data.matches } }));
     status.textContent = data.used_ai
       ? `${data.matches.length} options picked for you.`
@@ -105,6 +117,11 @@ function matchCard(m) {
     p.append(el('strong', null, 'First step: '), document.createTextNode(m.first_step));
     body.append(p);
   }
+  if (m.barrier_tip) {
+    const p = el('p', 'tip');
+    p.append(el('strong', null, 'Tip: '), document.createTextNode(m.barrier_tip));
+    body.append(p);
+  }
   const contact = [m.phone && `Phone: ${m.phone}`, m.contact && `Contact: ${m.contact}`].filter(Boolean).join('  /  ');
   if (contact) body.append(el('p', 'contact', contact));
   const actions = el('div', 'match-actions');
@@ -124,6 +141,72 @@ function matchCard(m) {
   card.append(body);
   return card;
 }
+
+// ---- Ask Pathly (DeepSeek chat about the matches shown, via /api/chat) ----
+
+const chat = { ids: [], history: [], busy: false };
+
+function startChat(data) {
+  chat.ids = data.matches.map((m) => m.id).slice(0, 5);
+  chat.history = [];
+  $('#ask-log').replaceChildren();
+  suggest(data.follow_up_questions || []);
+  $('#ask').hidden = !chat.ids.length; // nothing to ask about when there are no matches (for example a crisis)
+}
+
+function suggest(questions) {
+  $('#ask-suggest').replaceChildren(...questions.slice(0, 3).map((q) => {
+    const b = el('button', 'chip c-sky', q);
+    b.type = 'button';
+    b.addEventListener('click', () => ask(q));
+    return b;
+  }));
+}
+
+function chatLine(role, text) {
+  const line = el('div', `ask-line ${role}`);
+  line.append(el('p', null, text));
+  if (role === 'assistant') line.append(sayButton(() => text));
+  $('#ask-log').append(line);
+  line.scrollIntoView({ block: 'nearest', behavior: reduceMotion ? 'auto' : 'smooth' });
+  return line;
+}
+
+async function ask(message) {
+  const text = message.trim();
+  if (!text || chat.busy) return;
+  chat.busy = true;
+  $('#ask-input').value = '';
+  chatLine('user', text);
+  const waiting = chatLine('assistant pending', 'Thinking...');
+  const fields = ['path', 'type', 'district', 'hobbies', 'studies', 'interests', 'experience'];
+  const sentAnswers = Object.fromEntries(fields.filter((k) => answers[k]).map((k) => [k, answers[k]]));
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ answers: sentAnswers, matched_opportunity_ids: chat.ids, history: chat.history.slice(-8), message: text }),
+    });
+    if (res.status === 429) throw new Error('busy');
+    if (!res.ok) throw new Error(res.status);
+    const data = await res.json();
+    waiting.remove();
+    let reply = data.reply;
+    if (data.needs_human_support) reply += ' It would help to talk this through with a trusted adult or an adviser at the Youth Hub today.';
+    chatLine('assistant', reply);
+    chat.history.push({ role: 'user', content: text }, { role: 'assistant', content: reply.slice(0, 1000) });
+    suggest(data.suggested_questions || []);
+  } catch (err) {
+    waiting.remove();
+    chatLine('assistant', err.message === 'busy'
+      ? "You've asked a lot in a short time. Give it a few minutes and try again."
+      : "Sorry, I can't answer right now. You can still use the contact details on each option.");
+  } finally {
+    chat.busy = false;
+  }
+}
+
+$('#ask-form').addEventListener('submit', (event) => { event.preventDefault(); ask($('#ask-input').value); });
 
 // ---- Voice (ElevenLabs, through /api/speak and /api/transcribe) ----------
 // Buttons only appear when the server has a key. Without one the site is text only.
@@ -226,6 +309,7 @@ function setUpVoice() {
   // Speak an answer instead of typing it.
   if (navigator.mediaDevices && window.MediaRecorder) {
     $$('#about-form textarea, #about-form input').forEach((field) => field.after(micButton(field)));
+    $('#ask-form').after(micButton($('#ask-input')));
   }
 }
 

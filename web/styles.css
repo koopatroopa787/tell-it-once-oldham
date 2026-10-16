@@ -170,6 +170,30 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .mic-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 8px; font-weight: 400; }
 .mic.is-live { background: var(--ember); color: #fff; }
 .mic-note { font: 400 12px/1.4 var(--mono); }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* AI summary, directions and tips */
+.summary { font-size: 19px; margin: 6px 0 14px; max-width: 720px; }
+.directions { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 18px; }
+.directions .kicker { grid-column: 1 / -1; margin: 0; }
+.direction { border: 2px solid var(--ink); background: var(--sky); padding: 12px 14px; display: grid; gap: 4px; }
+.direction strong { font: 400 20px/1 var(--display); text-transform: uppercase; }
+.direction span { font-size: 15px; }
+.match .tip { background: var(--cream); border-left: 4px solid var(--orange); padding: 8px 10px; }
+
+/* Ask Pathly chat */
+.ask { border: 2px solid var(--ink); background: #fff; padding: 18px 20px; margin: 6px 0 18px; }
+.ask h4 { font: 400 28px/1 var(--display); text-transform: uppercase; margin: 0 0 6px; }
+.ask-log { display: grid; gap: 10px; margin: 12px 0; }
+.ask-line { max-width: 85%; padding: 10px 14px; border: 2px solid var(--ink); }
+.ask-line p { margin: 0 0 6px; } .ask-line p:last-child { margin: 0; }
+.ask-line.user { justify-self: end; background: var(--peach); }
+.ask-line.assistant { justify-self: start; background: var(--cream); }
+.ask-line.pending { opacity: .7; }
+.ask-suggest { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.ask-suggest .chip { cursor: pointer; white-space: normal; text-align: left; }
+.ask-form { display: flex; gap: 10px; }
+.ask-form input { flex: 1; min-height: 44px; padding: 10px 12px; border: 2px solid var(--ink); background: #fff; }
 
 /* How it works */
 .how-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }

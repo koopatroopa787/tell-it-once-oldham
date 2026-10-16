@@ -29,7 +29,18 @@
   const located = (i) => i.lat != null && i.lng != null;
   const outcode = (pc) => String(pc || '').trim().split(/\s+/)[0].toUpperCase();
   const districtOf = (i) => DISTRICT_OF[outcode(i.pc)] || null;
-  const PLACES = D.items.filter((i) => located(i) && i.ks.some((k) => TYPE_OF_LAYER[k]));
+  // Point-in-polygon on the borough outline ([lat, lng] pairs), so places just over the border are left out.
+  const inOldham = (lat, lng) => {
+    const ring = D.boundary[0];
+    let inside = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const [yi, xi] = ring[i];
+      const [yj, xj] = ring[j];
+      if ((yi > lat) !== (yj > lat) && lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
+  };
+  const PLACES = D.items.filter((i) => located(i) && i.ks.some((k) => TYPE_OF_LAYER[k]) && inOldham(i.lat, i.lng));
   const byName = (n) => D.items.find((i) => i.n === n && located(i));
 
   // ---- Base map, drawn from the data in the site's colours (no tile server) ----

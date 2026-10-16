@@ -120,7 +120,20 @@
             <h3>Options for you</h3>
             <p class="alert" id="crisis" role="alert" hidden></p>
             <p class="status" id="status" role="status"></p>
+            <p class="summary" id="summary" hidden></p>
+            <div class="directions" id="directions" hidden></div>
             <div class="results" id="results"></div>
+            <section class="ask" id="ask" aria-labelledby="ask-title" hidden>
+              <h4 id="ask-title">Ask Pathly</h4>
+              <p class="hint">Ask about the options above, like what to say when you call or which to try first. Don't include your name, address or phone number.</p>
+              <div class="ask-log" id="ask-log" aria-live="polite"></div>
+              <div class="ask-suggest" id="ask-suggest"></div>
+              <form class="ask-form" id="ask-form">
+                <label class="visually-hidden" for="ask-input">Your question</label>
+                <input id="ask-input" name="message" maxlength="800" autocomplete="off" placeholder="What should I do first?">
+                <button type="submit" class="btn btn-small">Ask</button>
+              </form>
+            </section>
             <p class="hint">Real Oldham services, checked on 16 October 2026. Check details with the organisation before you go.</p>
             <div class="row"><button type="button" class="back" data-go="about">&larr; Change my answers</button><button type="button" class="back" data-go="restart">Start again</button></div>
           </div>
