@@ -209,7 +209,7 @@ function showResults(data) {
   talk.history = [];
   if (talk.ids.length) {
     line('ai', 'Want to know more about any of these? Ask me anything, like what to say when you ring or which to try first.');
-    suggest(data.follow_up_questions);
+    suggest(STARTERS);
   }
   log.scrollTo({ top: log.scrollHeight, behavior: reduceMotion ? 'auto' : 'smooth' });
 }
@@ -248,6 +248,9 @@ async function showJobs(row) {
   row.append(box);
   if (!reduceMotion && window.gsap) gsap.from(box.children, { y: 16, opacity: 0, stagger: 0.06, duration: 0.7, ease: 'expo.out' });
 }
+
+// Things a young person would ask next. The AI's follow_up_questions are questions for them, so they don't fit here.
+const STARTERS = ['Which one should I try first?', 'What should I say when I ring?', 'What do I need to know before I go?'];
 
 function suggest(questions) {
   const list = (questions || []).slice(0, 3).map((q) => ({ value: q, label: q }));
@@ -352,7 +355,7 @@ const listOf = (items) => (items.length < 2 ? items.join('') : `${items.slice(0,
 
 // Carry on after an upload: skip the question the CV answered, or ask the current one again.
 function reAsk() {
-  if (talk.done) return suggest([]);
+  if (talk.done) return suggest(STARTERS);
   if (!talk.q || keyOf(talk.q) in answers) return next();
   pop(talk.q.title, talk.q.options(), (opt) => (opt.value === UPLOAD ? fileInput.click() : reply(opt.label, opt.value)));
 }
