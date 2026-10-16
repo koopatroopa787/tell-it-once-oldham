@@ -24,6 +24,7 @@ The demo website in `web/` is served at http://localhost:8000/ (see `web/README.
 | `POST /api/chat` | Ask Pathly: `{answers, matched_opportunity_ids, history, message}`; answers only about the matches shown, with crisis messages bypassing the AI. 30 questions per visitor per 10 minutes |
 | `GET /api/voice` | `{"enabled": true}` when an ElevenLabs key is set, so the site shows the Listen and Speak buttons |
 | `POST /api/speak` | `{text}` (up to 800 characters) to MP3 audio through ElevenLabs |
+| `POST /api/read-doc` | A CV or document as the raw body (`application/pdf`, Word `.docx` or `text/plain`, up to 5 MB) to `{text, removed}`. Read in memory and never saved; the name line, emails, phone numbers, links and other personal details are removed |
 | `POST /api/transcribe` | Raw audio in the body (for example `audio/webm` from the browser) to `{text, removed}`, with personal details removed. Voice calls are limited per visitor to protect credits |
 | `GET /api/voice/session` | A 15-minute signed URL for the ElevenLabs voice agent (`signed_url`); 503 until the voice keys are set |
 

@@ -31,6 +31,7 @@ function goTo(sel) {
 // Each one: what Pathly says, optional pop-up options, and how to read a typed reply.
 // Choice questions understand plain words ("college", "Royton"); free-text ones take anything, or "skip".
 
+const UPLOAD = 'upload';
 const has = (re) => (text) => re.test(text.toLowerCase());
 const QUESTIONS = [
   {
@@ -67,7 +68,8 @@ const QUESTIONS = [
     say: () => (answers.path === 'student' ? 'And what are you studying?' : 'Any work or experience so far? A paper round or helping family out counts.'),
     options: () => (answers.path === 'student'
       ? ['GCSEs', 'A levels', 'A BTEC', 'An apprenticeship', 'Uni']
-      : ['Nothing yet', 'Part-time or weekend work', 'Helping family or neighbours', 'Volunteering']).map((v) => ({ value: v, label: v })),
+      : ['Nothing yet', 'Part-time or weekend work', 'Helping family or neighbours', 'Volunteering']).map((v) => ({ value: v, label: v }))
+      .concat({ value: UPLOAD, label: 'Upload my CV', desc: 'PDF, Word or .txt. Your name and contact details come out first' }),
     free: true,
   },
   {
@@ -117,7 +119,7 @@ async function next() {
   $('#talk-step').textContent = `${QUESTIONS.indexOf(q) + 1} of ${QUESTIONS.length}: ${q.step}`;
   await typing();
   line('ai', q.say());
-  pop(q.title, q.options(), (opt) => reply(opt.label, opt.value));
+  pop(q.title, q.options(), (opt) => (opt.value === UPLOAD ? fileInput.click() : reply(opt.label, opt.value)));
   input.placeholder = q.free ? 'Type your answer, or "skip"...' : 'Pick above or type a reply...';
 }
 
@@ -263,6 +265,53 @@ function restart() {
   next();
 }
 $('#talk-restart').addEventListener('click', restart);
+
+// ---- Documents: a CV or any doc, read on the server with personal details taken out ----
+
+const fileInput = $('#doc-input');
+const DOC_TYPES = { pdf: 'application/pdf', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', txt: 'text/plain' };
+$('#attach').addEventListener('click', () => fileInput.click());
+
+fileInput.addEventListener('change', async () => {
+  const file = fileInput.files[0];
+  fileInput.value = '';
+  if (!file || talk.busy) return;
+  const ext = file.name.split('.').pop().toLowerCase();
+  closePop();
+  line('user', `Uploaded a ${ext.toUpperCase()} file`); // not the file name: it often has the person's name in it
+  if (!DOC_TYPES[ext]) { line('ai', "I can read PDF, Word (.docx) or .txt files. Could you save it as one of those?"); return reAsk(); }
+  talk.busy = true;
+  let read = false;
+  const dots = el('div', 'msg ai typing');
+  dots.append(el('span'), el('span'), el('span'));
+  log.append(dots);
+  log.scrollTop = log.scrollHeight;
+  try {
+    const res = await fetch('/api/read-doc', { method: 'POST', headers: { 'Content-Type': DOC_TYPES[ext] }, body: file });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || "I couldn't read that file.");
+    dots.remove();
+    answers.experience = [answers.experience, data.text].filter(Boolean).join('\n').slice(0, 1000);
+    const removed = data.removed.length ? ` I took out your ${listOf(data.removed)} first.` : '';
+    line('ai', `Got it, I've read it.${removed} Nothing is saved, it's only used for this chat.`);
+    read = true;
+  } catch (err) {
+    dots.remove();
+    line('ai', err.message);
+  } finally {
+    talk.busy = false;
+  }
+  if (read && talk.done) { line('ai', "I'll look again with that in mind."); await findMatches(); } else reAsk();
+});
+
+const listOf = (items) => (items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items.at(-1)}`);
+
+// Carry on after an upload: skip the question the CV answered, or ask the current one again.
+function reAsk() {
+  if (talk.done) return suggest([]);
+  if (!talk.q || keyOf(talk.q) in answers) return next();
+  pop(talk.q.title, talk.q.options(), (opt) => (opt.value === UPLOAD ? fileInput.click() : reply(opt.label, opt.value)));
+}
 
 // ---- Option pop-up (like Claude's question card) -----------------------------
 // Numbered options above the bar. Click, press the number, or move with the arrows and press Enter.

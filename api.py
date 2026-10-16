@@ -10,11 +10,13 @@ from typing import Literal
 
 import httpx
 from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 import config
+import documents
 import questions
 from deepseek.matcher import Matcher
 from directory import Directory
@@ -276,6 +278,30 @@ async def transcribe(request: Request) -> Transcript:
         raise HTTPException(503, "Voice is not available right now.") from exc
     clean, removed = redact_pii(text)
     return Transcript(text=clean[:TEXT_LIMIT], removed=[PII_LABELS.get(tag, tag) for tag in removed])
+
+
+class DocumentText(BaseModel):
+    text: str
+    removed: list[str]
+
+
+@app.post("/api/read-doc")
+async def read_doc(request: Request) -> DocumentText:
+    """Read an uploaded CV or document (raw PDF, .docx or .txt body). Nothing is stored; personal details are removed."""
+    content_type = request.headers.get("content-type", "").split(";")[0]
+    if content_type not in documents.TYPES:
+        raise HTTPException(415, "Upload a PDF, a Word file (.docx) or a .txt file.")
+    data = await request.body()
+    if not data:
+        raise HTTPException(422, "That file is empty.")
+    if len(data) > documents.DOC_LIMIT:
+        raise HTTPException(413, "That file is too big. Try one under 5 MB.")
+    try:
+        text, removed = await run_in_threadpool(documents.read_document, data, content_type)
+    except documents.UnreadableDocument as exc:
+        raise HTTPException(422, str(exc)) from exc
+    labels = {**PII_LABELS, "LINK": "web link"}
+    return DocumentText(text=text[:TEXT_LIMIT], removed=[labels.get(tag, tag) for tag in removed])
 
 
 # The plain HTML front ends: Akshita's Oldham map at /map, web/ at /. Mounted last so /api routes win.
