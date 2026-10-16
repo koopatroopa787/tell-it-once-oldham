@@ -35,7 +35,7 @@ One owner per file so merges do not conflict:
 | Real Oldham opportunities | `data/opportunities.json` (keep the fields; leave blank rather than guess) |
 | Website (once the design is agreed) | `frontend/` |
 
-Conventions: a new question = one entry in `QUESTIONS` in `questions.py` and one optional field on `MatchRequest` in `api.py`. `matcher.py` redacts PII, forces a tool call, drops ids not in the list, and falls back to a no-AI match, so the app runs without an API key. Open question: does "Social work" mean social care careers or community and social activities? The sample data has both.
+Conventions: a new question = one entry in `QUESTIONS` in `questions.py` and one optional field on `MatchRequest` in `api.py`. `matcher.py` redacts PII, forces a tool call, drops ids not in the list, and falls back to a no-AI match, so the app runs without an API key. Open question: does "Social work" mean social care careers or community and social activities? The data currently covers community and social activities (youth clubs, Mahdlo, young carers).
 
 ## Non-negotiable rules
 

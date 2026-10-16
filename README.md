@@ -11,7 +11,7 @@ pip install -r requirements.txt
 uvicorn api:app --reload
 ```
 
-Interactive docs are at http://localhost:8000/docs. Without `ANTHROPIC_API_KEY` in `.env` it still answers, using a simple match instead of the AI. Set `ALLOWED_ORIGINS` in `.env` to the website's address once it is deployed; the default allows the local React dev servers on ports 5173 and 3000.
+Interactive docs are at http://localhost:8000/docs. Matching uses DeepSeek (`DEEPSEEK_API_KEY` and `MATCH_MODEL` in `.env`), the same provider as the chatbot. Without a key it still answers, using a simple match instead of the AI. Set `ALLOWED_ORIGINS` in `.env` to the website's address once it is deployed; the default allows the local React dev servers on ports 5173 and 3000.
 
 | Endpoint | What it does |
 | --- | --- |
@@ -20,6 +20,52 @@ Interactive docs are at http://localhost:8000/docs. Without `ANTHROPIC_API_KEY` 
 | `POST /api/match` | Takes `path`, `type`, `district` and the free-text answers; returns `crisis` (fixed safety information or `null`), `matches` (name, provider, area, why it fits, first step, phone, contact, link) and `used_ai` |
 
 Unknown fields, unknown districts and answers over 1,000 characters are rejected with a 422.
+
+### API contract (for the website and the chatbot)
+
+The chatbot can gather the answers in conversation, in any language it supports. It then calls `POST /api/match` with these fields, so matching keeps its guarantees wherever the chat runs: personal details are removed, only verified Oldham opportunities are returned, and crisis information comes first.
+
+Request:
+
+```json
+{
+  "path": "student | explore",
+  "type": "voluntary | paid_work | social_work",
+  "district": "Anywhere in Oldham | Central | East | North | South | West",
+  "hobbies": "student path only",
+  "studies": "student path only",
+  "interests": "explore path only",
+  "experience": "explore path only"
+}
+```
+
+Only `path` and `type` are required. The text fields are optional and limited to 1,000 characters each.
+
+Response (a real reply, cut to one match):
+
+```json
+{
+  "crisis": null,
+  "matches": [
+    {
+      "id": "social-mahdlo",
+      "name": "Mahdlo Youth Zone",
+      "provider": "Mahdlo",
+      "area": "Central",
+      "why": "Sport, arts, music, climbing and cooking, open seven days a week. Membership is 5 pounds a year, then 50p a visit.",
+      "first_step": "Join online or at reception. Egerton Street, OL1 3SE, opposite Blue Coat School (buses 76, 403, 411, 893).",
+      "phone": "0161 624 0111",
+      "contact": "info@mahdloyz.org",
+      "link": "https://www.mahdloyz.org"
+    }
+  ],
+  "used_ai": false
+}
+```
+
+- **`crisis`**: either `null` or `{"label", "message"}`. When it is set, show the message above the matches. It never depends on the AI.
+- **`matches`**: usually 3 to 5 items. `phone`, `contact` and `link` can be empty strings, so hide them when empty.
+- **`used_ai`**: `false` means the simple match was used. You can show a small note when it is `false`.
 
 Run the offline tests with `pytest`. They need no API key.
 
@@ -39,7 +85,7 @@ If responses feel slow, set `ANTHROPIC_MODEL=claude-haiku-5-5` in `.env`.
 | `matcher.py` | Matches answers to `data/opportunities.json`, with a no-AI fallback |
 | `safety.py` | PII redaction and fixed crisis rules, both run before the AI sees anything |
 | `directory.py` | Loads an opportunity or service list and formats it for the prompt |
-| `data/` | Sample opportunities, plus the Tell It Once sample services and personas |
+| `data/` | 16 real Oldham opportunities (`opportunities.json`, checked 16 Oct 2026), plus the Tell It Once sample services and personas |
 
 ## How it stays safe
 
@@ -48,7 +94,7 @@ If responses feel slow, set `ANTHROPIC_MODEL=claude-haiku-5-5` in `.env`.
 - The model can only recommend opportunities in the list. Anything else it suggests is removed.
 - The model never decides eligibility. Wording is always "you could" or "you may be able to".
 
-**Known limits.** The safety keyword rules are English only. The bundled opportunity list is sample data and every contact detail must be verified before real use.
+**Known limits.** The safety keyword rules are English only. The opportunity list was gathered from each organisation's own page on 16 Oct 2026 (see each entry's `source`); re-check contact details and times before real use.
 
 ## Tell It Once (earlier connector tool, back end only)
 

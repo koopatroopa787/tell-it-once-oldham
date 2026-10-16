@@ -1,6 +1,6 @@
 """Matches a young person's answers to opportunities in the verified Oldham list.
 
-Same pattern as triage.py: personal details are removed first, the model is forced to call one tool, and any
+Same pattern as triage.py, using DeepSeek: personal details are removed first, the model is forced to call one tool, and any
 opportunity id that is not in the list is dropped. If the AI is unavailable, a simple category match is used instead,
 so the demo never shows an empty page.
 """
@@ -10,7 +10,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-import anthropic
+import json
+
+import httpx
 
 import config
 from directory import Directory
@@ -53,6 +55,11 @@ MATCH_TOOL: dict[str, Any] = {
 }
 
 
+def _as_function(tool: dict[str, Any]) -> dict[str, Any]:
+    """Convert a tool definition to the OpenAI-style function shape DeepSeek expects."""
+    return {"name": tool["name"], "description": tool["description"], "parameters": tool["input_schema"]}
+
+
 @dataclass
 class MatchResult:
     matches: list[dict]
@@ -60,10 +67,30 @@ class MatchResult:
     used_ai: bool = True
 
 
+class DeepSeekClient:
+    """Posts a chat completion to DeepSeek's OpenAI-compatible API and returns the JSON body."""
+
+    def __init__(self, api_key: str = config.DEEPSEEK_API_KEY, base_url: str = config.DEEPSEEK_BASE_URL) -> None:
+        self.api_key = api_key
+        self.base_url = base_url.rstrip("/")
+
+    def chat(self, payload: dict) -> dict:
+        if not self.api_key:
+            raise RuntimeError("DEEPSEEK_API_KEY is not set.")
+        response = httpx.post(
+            f"{self.base_url}/chat/completions",
+            headers={"Authorization": f"Bearer {self.api_key}"},
+            json=payload,
+            timeout=config.MATCH_TIMEOUT,
+        )
+        response.raise_for_status()
+        return response.json()
+
+
 class Matcher:
     """Calls the model with a forced tool call, validates against the list, and falls back to a simple match."""
 
-    def __init__(self, directory: Directory, client: Any | None = None, model: str = config.MODEL) -> None:
+    def __init__(self, directory: Directory, client: Any | None = None, model: str = config.MATCH_MODEL) -> None:
         self.directory = directory
         self.model = model
         self._client = client
@@ -71,14 +98,14 @@ class Matcher:
     @property
     def client(self) -> Any:
         if self._client is None:
-            self._client = anthropic.Anthropic()
+            self._client = DeepSeekClient()
         return self._client
 
     def run(self, answers: dict) -> MatchResult:
         clean = {k: redact_pii(v)[0] if isinstance(v, str) else v for k, v in answers.items()}
         try:
             raw = self._call_model(clean)
-        except Exception:  # no key, network down, rate limit
+        except Exception:  # no key, network down, rate limit, malformed reply
             # ponytail: no response cache like triage.py; add one if the venue wifi is unreliable.
             return MatchResult(self.fallback(clean), used_ai=False)
         matches, dropped = self._validate(raw)
@@ -87,17 +114,22 @@ class Matcher:
     def _call_model(self, answers: dict) -> dict:
         system = SYSTEM_TEMPLATE.format(borough=config.BOROUGH, opportunities=self._to_prompt())
         about = "\n".join(f"- {k}: {v}" for k, v in answers.items() if v)
-        response = self.client.messages.create(
-            model=self.model,
-            max_tokens=config.MAX_TOKENS,
-            system=system,
-            tools=[MATCH_TOOL],
-            tool_choice={"type": "tool", "name": MATCH_TOOL["name"]},
-            messages=[{"role": "user", "content": f"What the young person told us:\n{about}"}],
+        body = self.client.chat(
+            {
+                "model": self.model,
+                "max_tokens": config.MAX_TOKENS,
+                "messages": [
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": f"What the young person told us:\n{about}"},
+                ],
+                "tools": [{"type": "function", "function": _as_function(MATCH_TOOL)}],
+                "tool_choice": {"type": "function", "function": {"name": MATCH_TOOL["name"]}},
+                "thinking": {"type": "disabled"},  # DeepSeek rejects a forced tool call in thinking mode
+            }
         )
-        for block in response.content:
-            if getattr(block, "type", None) == "tool_use":
-                return dict(block.input)
+        for call in body["choices"][0]["message"].get("tool_calls") or []:
+            if call["function"]["name"] == MATCH_TOOL["name"]:
+                return json.loads(call["function"]["arguments"])
         raise RuntimeError("The model did not return any matches.")
 
     def _to_prompt(self) -> str:
