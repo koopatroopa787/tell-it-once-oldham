@@ -14,7 +14,7 @@
   const DISTRICTS = ['Central', 'East', 'North', 'South', 'West'];
   // Map layer keys to the site's three opportunity types and their colours.
   const TYPE_OF_LAYER = { vol: 'voluntary', work: 'paid_work', social: 'social_work' };
-  const COLOR = { voluntary: '--peach', paid_work: '--blue', social_work: '--sand' };
+  const COLOR = { voluntary: '--orange', paid_work: '--ink', social_work: '--tint' };  // the page's three colours
   // Opportunities in data/opportunities.json have no coordinates. Pin them at the provider's listing on the map
   // (same mapping as frontend/app.js).
   const API_PIN = {
@@ -61,16 +61,16 @@
   map.fitBounds(home);
   const draw = L.canvas({ padding: 0.4 });
 
-  L.polygon(RING, { renderer: draw, stroke: false, fillColor: css('--paper'), fillOpacity: 1, interactive: false }).addTo(map);
-  D.parks.forEach((p) => L.polygon(p.p, { renderer: draw, stroke: false, fillColor: css('--sand'), fillOpacity: 0.55, interactive: false }).addTo(map));
-  D.water.polys.forEach((w) => L.polygon(w.p, { renderer: draw, stroke: false, fillColor: css('--sky'), fillOpacity: 1, interactive: false }).addTo(map));
-  D.water.rivers.forEach((r) => L.polyline(r.p, { renderer: draw, color: css('--sky'), weight: 2, interactive: false }).addTo(map));
+  L.polygon(RING, { renderer: draw, stroke: false, fillColor: css('--land'), fillOpacity: 1, interactive: false }).addTo(map);
+  D.parks.forEach((p) => L.polygon(p.p, { renderer: draw, stroke: false, fillColor: css('--tint'), fillOpacity: 0.55, interactive: false }).addTo(map));
+  D.water.polys.forEach((w) => L.polygon(w.p, { renderer: draw, stroke: false, fillColor: css('--ink-soft'), fillOpacity: 1, interactive: false }).addTo(map));
+  D.water.rivers.forEach((r) => L.polyline(r.p, { renderer: draw, color: css('--ink-soft'), weight: 2, interactive: false }).addTo(map));
   const ROAD = { motorway: 3.6, trunk: 2.8, primary: 2.2, secondary: 1.2 };
   Object.entries(ROAD).forEach(([cls, weight]) => (D.roads[cls] || []).forEach((r) =>
     L.polyline(r.p, { renderer: draw, color: css('--line'), weight, interactive: false }).addTo(map)));
-  D.tram.lines.forEach((l) => L.polyline(l, { renderer: draw, color: css('--blue'), weight: 2, opacity: 0.6, interactive: false }).addTo(map));
+  D.tram.lines.forEach((l) => L.polyline(l, { renderer: draw, color: css('--ink'), weight: 2, opacity: 0.6, interactive: false }).addTo(map));
   const outside = [[53.2, -2.8], [53.2, -1.3], [53.9, -1.3], [53.9, -2.8]];
-  L.polygon([outside, RING], { renderer: draw, stroke: false, fillColor: css('--cream'), fillOpacity: 0.78, interactive: false }).addTo(map);
+  L.polygon([outside, RING], { renderer: draw, stroke: false, fillColor: css('--paper'), fillOpacity: 0.78, interactive: false }).addTo(map);
   L.polyline(RING.concat([RING[0]]), { renderer: draw, color: css('--ink'), weight: 2, interactive: false }).addTo(map);
 
   // ---- Districts: a label on the map and a button row below it ----
