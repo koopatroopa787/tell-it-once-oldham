@@ -4,6 +4,8 @@ Pathly helps young people in Oldham find their next step: volunteering, paid wor
 
 Pathly will be a live website with a React front end (design still to be decided). The Python side is an HTTP API in `api.py` that the site calls.
 
+**Live demo:** https://kaakserver.tail042e87.ts.net/ (home page and voice chat) and https://kaakserver.tail042e87.ts.net/map/ (the Oldham map).
+
 ### Run the API
 
 ```bash
