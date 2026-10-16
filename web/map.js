@@ -160,6 +160,10 @@
     },
   };
 
+  // Places the chat talks about get their pins lit up; Start again clears the matches.
+  document.addEventListener('pathly:mentioned', (e) => Object.entries(pinned).forEach(([id, m]) =>
+    m.getElement()?.firstElementChild?.classList.toggle('is-mentioned', e.detail.ids.includes(id))));
+  document.addEventListener('pathly:reset', () => { pins.clearLayers(); pinned = {}; focusDistrict('Anywhere in Oldham'); });
   document.addEventListener('pathly:district', (e) => focusDistrict(e.detail.district));
   document.addEventListener('pathly:type', () => drawDots()); // the type was picked in the chat
   document.addEventListener('pathly:results', (e) => { drawDots(); showMatches(e.detail.matches); });

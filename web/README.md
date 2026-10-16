@@ -44,7 +44,7 @@ The SDK is loaded from jsDelivr (`@elevenlabs/client@1.26.0`) only when someone 
 
 ## Map
 
-`map.js` draws Akshita's Oldham map data (`frontend/data/oldham-map.js`, served at `/map/data/`) inside `<div id="oldham-map">`, in this site's colours with no tile server. Dots are council directory places for the chosen type and area, inside the borough only; matches appear as numbered pins, and result cards get a "See it on the map" button. The full map app is at `/map/`. If Leaflet or the data fails to load, the plain district buttons stay.
+`map.js` draws Akshita's Oldham map data (`frontend/data/oldham-map.js`, served at `/map/data/`) inside `<div id="oldham-map">`, in this site's colours with no tile server. Dots are council directory places for the chosen type and area, inside the borough only; matches appear as numbered pins, and result cards get a "See it on the map" button. The map follows the chat as it goes (type, area, then numbered matches, with pins lit up when the chat talks about them) and resets on Start again. The full map app is at `/map/`; the chat saves its answers and matches in `sessionStorage` (`pathly:chat`, gone when the tab closes), so `/map/` opens straight on the same results, or on the right question if the chat isn't finished. If Leaflet or the data fails to load, the plain district buttons stay.
 
 ## Voice and chat
 

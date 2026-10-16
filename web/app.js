@@ -120,6 +120,7 @@ async function typing(ms = 650) {
 
 // Ask the next question nobody has answered yet; when there are none left, find matches.
 async function next() {
+  sync();
   const q = QUESTIONS.find((item) => !(keyOf(item) in answers) && !(item.key === 'district' && talk.districtPicked));
   talk.q = q || null;
   if (!q) { await findMatches(); return; }
@@ -206,6 +207,8 @@ function showResults(data) {
   }
   document.dispatchEvent(new CustomEvent('pathly:results', { detail: { matches: data.matches } }));
   talk.ids = data.matches.map((m) => m.id).slice(0, 5);
+  talk.result = data;
+  sync();
   talk.history = [];
   if (talk.ids.length) {
     line('ai', 'Want to know more about any of these? Ask me anything, like what to say when you ring or which to try first.');
@@ -281,6 +284,7 @@ async function chat(text) {
     if (data.needs_human_support) answer += ' It would help to talk this through with a trusted adult or an adviser at the Youth Hub today.';
     dots.remove();
     line('ai', answer);
+    if ((data.referenced_opportunity_ids || []).length) document.dispatchEvent(new CustomEvent('pathly:mentioned', { detail: { ids: data.referenced_opportunity_ids } }));
     talk.history.push({ role: 'user', content: text.slice(0, 1000) }, { role: 'assistant', content: answer.slice(0, 1000) });
     suggest(data.suggested_questions);
   } catch (err) {
@@ -308,6 +312,8 @@ function restart() {
   Object.assign(talk, { q: null, done: false, busy: false, ids: [], history: [], districtPicked: false });
   closePop();
   log.replaceChildren();
+  talk.result = null;
+  document.dispatchEvent(new CustomEvent('pathly:reset'));
   next();
 }
 $('#talk-restart').addEventListener('click', restart);
@@ -651,10 +657,23 @@ function setDistrict(name, fromMap) {
   if (!DISTRICTS.includes(name)) return;
   answers.district = name;
   if (fromMap) talk.districtPicked = true;
-  $('#map-picked').textContent = `Showing: ${name}`;
   $$('.district-picker button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.district === name)));
   document.dispatchEvent(new CustomEvent('pathly:district', { detail: { district: name } }));
+  sync();
 }
+// The map follows the chat: a status line here, and a hand-off so /map/ opens on the same answers and results.
+// sessionStorage, not localStorage: it goes when the tab closes, which matters on shared library computers.
+function sync() {
+  const { type, district } = answers;
+  const n = talk.result ? talk.result.matches.length : 0;
+  $('#map-picked').textContent = `Showing: ${type ? `${TYPES[type]} places` : 'Everything'} in ${!district || district === 'Anywhere in Oldham' ? 'all of Oldham' : district}${n ? `, your ${n} matches numbered` : ''}`;
+  $('#full-map').textContent = n ? 'See your matches on the full map' : 'Open the full map';
+  try {
+    sessionStorage.setItem('pathly:chat', JSON.stringify({ answers, result: talk.result ? {
+      matches: talk.result.matches, summary: talk.result.summary, crisis: talk.result.crisis, used_ai: talk.result.used_ai } : null }));
+  } catch (err) { /* private mode: the full map just starts fresh */ }
+}
+
 window.Pathly = { setDistrict: (name) => setDistrict(name, true), answers };
 $$('.district-picker button').forEach((b) => b.addEventListener('click', () => setDistrict(b.dataset.district, true)));
 

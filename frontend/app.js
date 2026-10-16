@@ -106,7 +106,9 @@ const DISTRICT_OF = {OL1:"Central", OL2:"North", OL3:"East", OL4:"East", OL8:"So
 const API_PIN = {"work-get-oldham-working":"Get Oldham Working", "work-careers-positive-steps":"Positive Steps career guidance",
   "work-empower-oldham":"Positive Steps career guidance", "social-young-carers":"Positive Steps career guidance",
   "work-oldham-college-apprenticeships":"Oldham College Careers Service", "social-mahdlo":"Mahdlo Youth Zone",
-  "social-theatre-workshop":"Oldham Theatre Workshop"};
+  "social-theatre-workshop":"Oldham Theatre Workshop",
+  /* Youth Council and Barrier Breakers both meet at Rock Street Resource Centre, listed on the map as Barrier Breakers. */
+  "vol-youth-council":"Barrier Breakers", "social-barrier-breakers":"Barrier Breakers"};
 
 const SYN = {
   "art & drawing":["art","arts","creative","drawing","paint","craft","design","gallery","museum"],
@@ -412,7 +414,7 @@ function render(){
         <div class="field"><label class="l" for="lang">Explain results in</label>
           <select id="lang">${LANGS.map(l => `<option ${st.lang===l?"selected":""}>${l}</option>`).join("")}</select></div>
       </div>
-      <p class="privacy">${svg("lock",14)}<span>We only ask for the first half of a postcode, like OL8. Please don't include a name, address or phone number. Personal details are removed before any AI sees the answers, and nothing is saved.</span></p>
+      <p class="privacy">${svg("lock",14)}<span>We only ask for the first half of a postcode, like OL8. Please don't include a name, address or phone number. Personal details are removed before any AI sees the answers, and before they're saved on Pathly's own server.</span></p>
       <div class="nav"><button type="button" class="btn ghost" id="back">Back</button><button type="submit" class="btn primary" id="go">Show my options</button></div>
       </form>`;
     pbody.querySelectorAll(".chip").forEach(b => b.onclick = () => { const s = st[b.dataset.set], v = b.dataset.v; s.has(v) ? s.delete(v) : s.add(v); b.setAttribute("aria-pressed", s.has(v)); });
@@ -622,7 +624,7 @@ function renderExplore(){
     <div class="inview" id="inview"></div>
     <div class="human" style="margin-top:20px"><h3>Why the council could run this</h3>
       <p>Most of these listings come straight from Oldham Council's own service directory, which already has a public data feed. Staff keep updating the directory as they do now, and this map updates with it. No new database to maintain.</p>
-      <p style="margin:0">Map data: OpenStreetMap. Food banks: Give Food. Personal data stored: none.</p></div>`;
+      <p style="margin:0">Map data: OpenStreetMap. Food banks: Give Food. Answers are kept on Pathly's own server with personal details taken out.</p></div>`;
   pbody.querySelectorAll("[data-l]").forEach(b => b.onclick = () => { toggleLayer(b.dataset.l); renderExplore(); });
   renderInView();
 }
@@ -640,5 +642,22 @@ restyle();
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", restyle);
 new MutationObserver(restyle).observe(document.documentElement, {attributes:true, attributeFilter:["data-theme","class"]});
 window.addEventListener("resize", () => map.invalidateSize());
-refreshMarkers(); render();
+/* ---------- hand-off from the chat on the home page ---------- */
+/* The chat saves its answers and matches in sessionStorage, so this page opens on them instead of asking again. */
+const OUTCODE_OF = {Central:"OL1", North:"OL2", East:"OL4", South:"OL8", West:"OL9"};
+const WANT_OF = {voluntary:"vol", paid_work:"paid", social_work:"social"};
+function fromChat(){
+  let h = null; try { h = JSON.parse(sessionStorage.getItem("pathly:chat") || "null"); } catch(e){ /* no storage: start fresh */ }
+  const a = h && h.answers; if(!a || !a.path) return false;
+  const stu = a.path === "student", known = [a.studies, a.experience].filter(Boolean).join("; ");
+  Object.assign(st, {who: stu ? "student" : "efo", want: new Set(WANT_OF[a.type] ? [WANT_OF[a.type]] : []),
+    enjoy: a.hobbies || a.interests || "", study: stu ? known : "", exp: stu ? "" : known});
+  if(OUTCODE_OF[a.district]) setArea(OUTCODE_OF[a.district]);
+  const r = h.result;
+  if(!(r && r.matches && r.matches.length)){ st.step = st.want.size ? 2 : 1; return false; }
+  st.results = [...new Map(r.matches.map(m => { const id = apiItem(a.type, m); return [id, {id, why:String(m.why || ""), first_step:String(m.first_step || "")}]; })).values()];
+  Object.assign(st, {summary: String(r.summary || "").slice(0, 300), crisis: r.crisis || null, how: r.used_ai ? "api-ai" : "api", step: 3, mode: "results"});
+  refreshMarkers(); renderResults(); fitResults(); return true;
+}
+refreshMarkers(); if(!fromChat()) render();
 })();

@@ -192,6 +192,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .map-pin { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--paper); background: var(--c);
   color: var(--ink); font: 500 13px/1 var(--mono); box-shadow: 0 2px 8px rgba(26, 18, 11, .25); }
 .map-pin[style*="--ink"] { color: var(--paper); }
+.map-pin { transition: transform .4s var(--ease), box-shadow .4s var(--ease); }
+.map-pin.is-mentioned { transform: scale(1.25); box-shadow: 0 0 0 5px rgba(242, 107, 29, .35), 0 2px 8px rgba(26, 18, 11, .25); }
 .map-pop strong { font: 700 18px/1.15 var(--display); letter-spacing: -.02em; }
 .map-pop p { margin: 6px 0; font: 400 13px/1.4 var(--sans); }
 .map-pop .map-pop-meta { font: 400 11px/1.4 var(--mono); color: var(--muted); }
