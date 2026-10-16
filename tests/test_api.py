@@ -124,6 +124,6 @@ def test_voice_session_returns_signed_url(monkeypatch: pytest.MonkeyPatch) -> No
 
 
 def test_both_front_ends_are_served() -> None:
-    assert "Talk to Pathly" in client.get("/").text
+    assert 'id="mic"' in client.get("/").text
     assert "config.js" in client.get("/map/").text
     assert client.get("/map/data/oldham-map.js").status_code == 200

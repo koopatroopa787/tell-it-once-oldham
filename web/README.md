@@ -1,14 +1,15 @@
 # Pathly web front end
 
-Plain HTML, CSS and JS with GSAP (vendored in `vendor/`, version 3.15.0, [GSAP standard licence](https://gsap.com/standard-license/)). No build step.
+Plain HTML, CSS and JS with GSAP 3.15.0 ([standard licence](https://gsap.com/standard-license/)) and Lenis 1.1.13 (MIT), both vendored in `vendor/`. The hero's dot field is ported from [React Bits](https://reactbits.dev) (MIT + Commons Clause). No build step.
 
 Run from the repo root: `uvicorn api:app --reload`, then open http://127.0.0.1:8000. FastAPI serves this folder at `/` and the API under `/api` (contract in the main README). Without an API key the results use a simple no-AI match, so the page always works.
 
 | File | What it holds |
 | --- | --- |
 | `index.html` | Hero, the flow (path, type, about, results), paths, map slot, how it works |
-| `styles.css` | Colour tokens at the top: shades of orange plus one complement (petrol blue). Accent classes `c-orange`, `c-peach`, `c-sand`, `c-blue`, `c-sky` set `--c` (colour) and `--on` (readable text on it). Category colours: voluntary peach, paid work blue, social sand |
-| `app.js` | Flow logic, results rendering, the map hook and all motion. Motion is skipped when the visitor asks for reduced motion |
+| `styles.css` | Tokens at the top. Three colours only: `--paper`, `--ink` and `--orange` (with `--orange-ink` for small orange text). Type carries the variety: Bricolage Grotesque headlines, Instrument Serif italic accents, IBM Plex Mono labels, Atkinson Hyperlegible body, the same families as `/map` |
+| `app.js` | Flow logic, results rendering, the map hook, voice chat and all motion (GSAP, Lenis smooth scroll). Motion is skipped when the visitor asks for reduced motion |
+| `dotfield.js` | The hero background: the React Bits DotField component ported to plain JS (WebGL2; falls back to a CSS dot grid) |
 
 ## Voice chat (ElevenLabs Agents)
 
@@ -55,6 +56,6 @@ The contract `map.js` follows, for any replacement map:
 - `window.Pathly.answers` holds what the young person has chosen so far (for example `answers.type`), if the map wants to highlight matching places.
 - Each opportunity in `data/opportunities.json` has an `area` field with the same district names, so map pins can use it.
 
-Theme the map with the CSS tokens rather than its default colours, so it matches the page (we will restyle it to match once it lands): land and background `--paper` or `--cream`, roads and boundaries `--line`, district fill `--sand`, hover `--peach`, selected district `--orange` with an `--ink` outline, opportunity pins coloured by category (`--peach`, `--blue`, `--sand`) with an `--ink` stroke. Labels in `Anton` (display) or `Kode Mono` (small). With Leaflet or MapLibre, a muted base map (for example CARTO Positron) plus these colours on the GeoJSON layer works well.
+The full map lives at `/map` (`frontend/`, served by the API). To match this page, use the same three colours: land and background `--paper`, roads and boundaries `--line`, districts in a light tint of `--orange` with the selected one solid `--orange` and an `--ink` outline, pins in `--ink` with the matched ones in `--orange`. Type: Bricolage Grotesque, Instrument Serif italic for the odd accent, IBM Plex Mono for small labels.
 
 Keep the map usable without a mouse (buttons or keyboard selection) and never ask for a full postcode or address.

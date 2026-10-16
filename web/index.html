@@ -3,16 +3,18 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#FFF3E2">
-  <meta name="description" content="Pathly: find volunteering, paid work and social opportunities in Oldham.">
+  <meta name="theme-color" content="#F5EFE6">
+  <meta name="description" content="Pathly: volunteering, first jobs, apprenticeships and clubs for young people in Oldham.">
   <title>Pathly | Oldham</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Anton&family=DM+Sans:opsz,wght@9..40,400;9..40,600&family=Kode+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/map/vendor/leaflet.css">
   <link rel="stylesheet" href="./styles.css">
   <script defer src="./vendor/gsap.min.js"></script>
   <script defer src="./vendor/ScrollTrigger.min.js"></script>
+  <script defer src="./vendor/lenis.min.js"></script>
+  <script defer src="./dotfield.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script defer src="/map/data/oldham-map.js"></script>
   <script defer src="./app.js"></script>
@@ -23,25 +25,17 @@
 
   <header class="site-header" id="top">
     <div class="container header-row">
-      <a class="brand" href="#top">PATHLY<small>OLDHAM</small></a>
+      <a class="brand" href="#top">Pathly <em>Oldham</em></a>
       <nav class="nav" aria-label="Main">
-        <a href="#paths">Paths</a><a href="#map">Map</a><a href="#how">How it works</a>
+        <a href="#paths">What's out there</a><a href="#map">Map</a><a href="#answers">Your answers</a>
       </nav>
-      <a class="btn btn-small" href="#start">Find my path <span aria-hidden="true">&rarr;</span></a>
+      <a class="btn btn-small" href="#start">Start</a>
     </div>
   </header>
 
   <main id="main">
-    <!-- HERO: deliberately short. Motion lives in the trail, the rotating word and the ticker. -->
     <section class="hero" aria-labelledby="hero-title">
-      <svg class="trail" viewBox="0 0 1200 420" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-        <path id="trail-path" d="M-40 330 C 120 330 170 120 330 140 S 520 360 660 300 S 820 60 960 110 S 1150 260 1260 200" />
-        <circle class="stop stop-peach" cx="330" cy="140" r="9" />
-        <circle class="stop stop-blue" cx="660" cy="300" r="9" />
-        <circle class="stop stop-sand" cx="960" cy="110" r="9" />
-        <circle class="traveller t1" r="10"><animateMotion dur="18s" repeatCount="indefinite"><mpath href="#trail-path" /></animateMotion></circle>
-        <circle class="traveller t2" r="7"><animateMotion dur="18s" begin="-9s" repeatCount="indefinite"><mpath href="#trail-path" /></animateMotion></circle>
-      </svg>
+      <div class="hero-dots" id="hero-dots" aria-hidden="true"></div>
 
       <div class="container hero-inner">
         <!-- VOICE: first thing on the page. ElevenLabs agent; matching still goes through /api/match. -->
@@ -51,105 +45,102 @@
             <span class="sr-only" id="mic-label">Start talking to Pathly</span>
           </button>
           <div class="voice-copy">
-            <strong>Talk to Pathly</strong>
-            <span id="voice-status" role="status">Tap the mic and tell us what you're into. Or <a href="#start">type instead</a>.</span>
+            <strong>Rather just say it?</strong>
+            <span id="voice-status" role="status">Tap the mic and talk it through. Or <a href="#start">type instead</a>.</span>
+            <small>Your voice goes through ElevenLabs. Leave out your name and address.</small>
           </div>
         </div>
         <div class="chat" id="chat" aria-label="Conversation" hidden></div>
-        <p class="voice-note">Your voice is processed by ElevenLabs. Please don't say your name or address.</p>
 
-        <h1 id="hero-title" class="wordmark" aria-label="Pathly">
-          <span>P</span><span>A</span><span>T</span><span>H</span><span>L</span><span>Y</span>
-        </h1>
-        <p class="hero-line">Find your next <span class="rotator" id="rotator">volunteer role</span><br>in Oldham.</p>
-        <div class="hero-actions">
-          <a class="btn" href="#start">Find my path <span aria-hidden="true">&rarr;</span></a>
-          <span class="tag-line">2 MINUTES / FREE / NO SIGN-UP</span>
+        <div class="hero-main">
+          <p class="eyebrow">For young people in Oldham</p>
+          <h1 id="hero-title" class="headline">
+            <span class="line"><span>Find your</span></span>
+            <span class="line"><span><em>thing</em> to do</span></span>
+            <span class="line"><span>in Oldham.</span></span>
+          </h1>
+          <div class="hero-side">
+            <p>Volunteering, a first job, an apprenticeship or a club to join. Tell us what you're into and you'll get places nearby, with a name and a number to ring.</p>
+            <a class="btn" href="#start">Answer three questions</a>
+          </div>
         </div>
       </div>
 
-      <div class="ticker" aria-hidden="true">
-        <div class="ticker-track">
-          <span class="chip c-peach">Volunteer at a food project</span><span class="chip c-blue">Apprenticeships</span><span class="chip c-sand">Youth clubs</span><span class="chip c-peach">Duke of Edinburgh</span><span class="chip c-sky">Careers advice</span><span class="chip c-orange">First job</span><span class="chip c-peach">Community groups</span><span class="chip c-blue">Social care tasters</span><span class="chip c-sand">Young carers</span>
-          <span class="chip c-peach">Volunteer at a food project</span><span class="chip c-blue">Apprenticeships</span><span class="chip c-sand">Youth clubs</span><span class="chip c-peach">Duke of Edinburgh</span><span class="chip c-sky">Careers advice</span><span class="chip c-orange">First job</span><span class="chip c-peach">Community groups</span><span class="chip c-blue">Social care tasters</span><span class="chip c-sand">Young carers</span>
+      <div class="marquee" aria-hidden="true">
+        <div class="marquee-track">
+          <span>Mahdlo Youth Zone</span><span>Duke of Edinburgh's Award</span><span>Apprenticeships at Oldham College</span><span>Oldham Theatre Workshop</span><span>Action Together</span><span>Oldham Youth Council</span><span>Barrier Breakers</span><span>Youth Hub on Union Street</span>
+          <span>Mahdlo Youth Zone</span><span>Duke of Edinburgh's Award</span><span>Apprenticeships at Oldham College</span><span>Oldham Theatre Workshop</span><span>Action Together</span><span>Oldham Youth Council</span><span>Barrier Breakers</span><span>Youth Hub on Union Street</span>
         </div>
-      </div>
-
-      <div class="container">
-        <nav class="index" aria-label="Page index">
-          <a href="#start" class="i-orange"><span>[ START ]</span><strong>ANSWER 3 QUESTIONS</strong></a>
-          <a href="#paths" class="i-peach"><span>[ PATHS ]</span><strong>SEE WHAT'S OUT THERE</strong></a>
-          <a href="#map" class="i-blue"><span>[ MAP ]</span><strong>CHOOSE YOUR AREA</strong></a>
-          <a href="#how" class="i-sand"><span>[ HOW ]</span><strong>HOW IT WORKS</strong></a>
-        </nav>
       </div>
     </section>
 
     <!-- THE FLOW (from the team wireframe): path -> type -> questions -> results -->
     <section class="start section" id="start" aria-labelledby="start-title">
-      <div class="container">
-        <p class="kicker">Start here</p>
-        <h2 id="start-title" class="display">Your path, in three taps.</h2>
+      <div class="container start-grid">
+        <div class="section-head reveal">
+          <h2 id="start-title" class="title">Tell us where<br>you're <em>at.</em></h2>
+          <p class="aside">About a minute. Nothing to sign up for, and we don't keep your answers.</p>
+        </div>
         <div class="guide" id="guide">
-          <ol class="progress" aria-label="Progress"><li class="is-on"></li><li></li><li></li><li></li></ol>
+          <div class="progress" aria-hidden="true"><span id="progress-bar"></span></div>
 
           <div class="step" data-step="path">
-            <h3>Which sounds like you?</h3>
-            <div class="choices two">
-              <button type="button" class="choice c-orange" data-path="student">I'm a student</button>
-              <button type="button" class="choice c-sky" data-path="explore">I'm exploring my options</button>
+            <h3><span class="num">1 / 3</span>Which sounds like you?</h3>
+            <div class="choices">
+              <button type="button" class="choice" data-path="student"><strong>I'm a student</strong><span>School, college, sixth form or uni</span></button>
+              <button type="button" class="choice" data-path="explore"><strong>I'm exploring my options</strong><span>Not studying right now, or working out what's next</span></button>
             </div>
           </div>
 
           <div class="step" data-step="type" hidden>
-            <h3>What are you looking for?</h3>
-            <div class="choices three">
-              <button type="button" class="choice c-peach" data-type="voluntary">Voluntary</button>
-              <button type="button" class="choice c-blue" data-type="paid_work">Paid work</button>
-              <button type="button" class="choice c-sand" data-type="social_work">Social work</button>
+            <h3><span class="num">2 / 3</span>What are you after?</h3>
+            <div class="choices">
+              <button type="button" class="choice" data-type="voluntary"><strong>Voluntary</strong><span>Give some time, pick up skills, get a reference</span></button>
+              <button type="button" class="choice" data-type="paid_work"><strong>Paid work</strong><span>Jobs, apprenticeships, help with your CV</span></button>
+              <button type="button" class="choice" data-type="social_work"><strong>Social</strong><span>Clubs, groups and things to do with other people</span></button>
             </div>
-            <button type="button" class="back" data-go="path">&larr; Back</button>
+            <button type="button" class="back" data-go="path">Back</button>
           </div>
 
           <form class="step" data-step="about" id="about-form" hidden>
-            <h3>Tell us a bit about you</h3>
+            <h3><span class="num">3 / 3</span>A bit about you</h3>
             <div class="fields" data-for="student">
-              <label>What do you enjoy doing in your free time?<textarea name="hobbies" rows="2" maxlength="600"></textarea></label>
-              <label>What are you studying at the moment?<input name="studies" maxlength="200"></label>
+              <label>What do you do in your free time?<textarea name="hobbies" rows="2" maxlength="600" placeholder="Football, drawing, gaming, looking after my little brother..."></textarea></label>
+              <label>What are you studying?<input name="studies" maxlength="200" placeholder="GCSEs, a BTEC in sport, A levels..."></label>
             </div>
             <div class="fields" data-for="explore">
-              <label>What are you interested in?<textarea name="interests" rows="2" maxlength="600"></textarea></label>
-              <label>Any past work or experience? Anything counts.<textarea name="experience" rows="2" maxlength="600"></textarea></label>
+              <label>What are you interested in?<textarea name="interests" rows="2" maxlength="600" placeholder="Cars, cooking, helping people, music..."></textarea></label>
+              <label>Any work or experience so far? Anything counts.<textarea name="experience" rows="2" maxlength="600" placeholder="Helped at a family shop, babysitting, a paper round..."></textarea></label>
             </div>
-            <label>Where in Oldham are you?
+            <label>Which part of Oldham?
               <select name="district" id="district">
                 <option>Anywhere in Oldham</option><option>Central</option><option>East</option><option>North</option><option>South</option><option>West</option>
               </select>
             </label>
-            <p class="hint">Please don't include your name, address or phone number.</p>
-            <div class="row"><button type="submit" class="btn">Show me options <span aria-hidden="true">&rarr;</span></button><button type="button" class="back" data-go="type">&larr; Back</button></div>
+            <p class="hint">Leave out your name, address and phone number.</p>
+            <div class="row"><button type="submit" class="btn">Show me what's out there</button><button type="button" class="back" data-go="type">Back</button></div>
           </form>
 
           <div class="step" data-step="results" hidden>
-            <h3>Options for you</h3>
+            <h3>Worth a look</h3>
             <p class="alert" id="crisis" role="alert" hidden></p>
             <p class="status" id="status" role="status"></p>
             <p class="summary" id="summary" hidden></p>
             <div class="directions" id="directions" hidden></div>
             <div class="results" id="results"></div>
             <section class="ask" id="ask" aria-labelledby="ask-title" hidden>
-              <h4 id="ask-title">Ask Pathly</h4>
-              <p class="hint">Ask about the options above, like what to say when you call or which to try first. Don't include your name, address or phone number.</p>
+              <h4 id="ask-title">Still not sure? <em>Ask.</em></h4>
+              <p class="hint">Ask about the options above, like what to say when you ring or which one to try first. Leave out your name, address and phone number.</p>
               <div class="ask-log" id="ask-log" aria-live="polite"></div>
               <div class="ask-suggest" id="ask-suggest"></div>
               <form class="ask-form" id="ask-form">
-                <label class="visually-hidden" for="ask-input">Your question</label>
+                <label class="sr-only" for="ask-input">Your question</label>
                 <input id="ask-input" name="message" maxlength="800" autocomplete="off" placeholder="What should I do first?">
                 <button type="submit" class="btn btn-small">Ask</button>
               </form>
             </section>
-            <p class="hint">Real Oldham services, checked on 16 October 2026. Check details with the organisation before you go.</p>
-            <div class="row"><button type="button" class="back" data-go="about">&larr; Change my answers</button><button type="button" class="back" data-go="restart">Start again</button></div>
+            <p class="hint">Real Oldham services, checked on 16 October 2026. Check opening times and details with the organisation before you go.</p>
+            <div class="row"><button type="button" class="back" data-go="about">Change my answers</button><button type="button" class="back" data-go="restart">Start again</button></div>
           </div>
         </div>
       </div>
@@ -157,26 +148,27 @@
 
     <section class="paths section" id="paths" aria-labelledby="paths-title">
       <div class="container">
-        <p class="kicker">Three kinds of path</p>
-        <h2 id="paths-title" class="display">Pick a lane. Or try all three.</h2>
+        <div class="section-head reveal">
+          <h2 id="paths-title" class="title">What's out there</h2>
+          <p class="aside">Sixteen places the team has checked, from Mahdlo to the careers service. These are a few of them.</p>
+        </div>
         <div class="lanes">
-          <article class="lane c-peach is-open"><button type="button" class="lane-head" aria-expanded="true"><span>01</span><strong>Voluntary</strong></button><div class="lane-body"><p>Build confidence, meet people and get a reference employers trust.</p><button type="button" class="btn btn-ink" data-pick="voluntary">Start with this &rarr;</button></div></article>
-          <article class="lane c-blue"><button type="button" class="lane-head" aria-expanded="false"><span>02</span><strong>Paid work</strong></button><div class="lane-body"><p>Apprenticeships, first jobs and free help with your CV.</p><button type="button" class="btn btn-ink" data-pick="paid_work">Start with this &rarr;</button></div></article>
-          <article class="lane c-sand"><button type="button" class="lane-head" aria-expanded="false"><span>03</span><strong>Social</strong></button><div class="lane-body"><p>Clubs, groups and taster days to find your people.</p><button type="button" class="btn btn-ink" data-pick="social_work">Start with this &rarr;</button></div></article>
+          <article class="lane is-open"><button type="button" class="lane-head" aria-expanded="true"><span>Voluntary</span><em>4 places</em></button><div class="lane-body"><p>Action Together finds you a local group that needs a hand. Or go for your Duke of Edinburgh, or sit on the Youth Council.</p><button type="button" class="btn" data-pick="voluntary">Start with voluntary</button></div></article>
+          <article class="lane"><button type="button" class="lane-head" aria-expanded="false"><span>Paid work</span><em>7 places</em></button><div class="lane-body"><p>The Youth Hub on Union Street, apprenticeships at Oldham College, six months of paid work through the Jobs Guarantee.</p><button type="button" class="btn" data-pick="paid_work">Start with paid work</button></div></article>
+          <article class="lane"><button type="button" class="lane-head" aria-expanded="false"><span>Social</span><em>5 places</em></button><div class="lane-body"><p>Mahdlo is open every day. There are free youth clubs across the borough, Oldham Theatre Workshop, and a group for young carers.</p><button type="button" class="btn" data-pick="social_work">Start with social</button></div></article>
         </div>
       </div>
     </section>
 
-    <!-- MAP SLOT: Akshita's Oldham map mounts into #oldham-map. Contract in web/README.md. -->
+    <!-- MAP: map.js draws Akshita's Oldham data here (falls back to these buttons); the full map app is at /map. Contract in web/README.md. -->
     <section class="map section" id="map" aria-labelledby="map-title">
       <div class="container map-grid">
-        <div>
-          <p class="kicker">Area of interest</p>
-          <h2 id="map-title" class="display">Where in Oldham?</h2>
-          <p class="lead">Choose an area and we'll put the closest options first.</p>
+        <div class="reveal">
+          <h2 id="map-title" class="title">Where in <em>Oldham?</em></h2>
+          <p class="lead">Pick an area and the nearest places come first. The full map has 453 more, from youth clubs to food banks, with Metrolink stops and walking times.</p>
           <p class="map-picked" id="map-picked" role="status">Showing: Anywhere in Oldham</p>
-          <p class="hint">Dots are places from Oldham Council's directory for what you're looking for. Your matches show as numbered pins.</p>
-          <a class="btn btn-ink" href="/map/">Open the full Oldham map <span aria-hidden="true">&rarr;</span></a>
+          <p class="hint">Dots are places from Oldham Council's directory for what you're after. Your matches show as numbered pins.</p>
+          <a class="btn btn-ink" href="/map/">Open the full map</a>
         </div>
         <div id="oldham-map" class="map-slot">
           <div class="district-picker" role="group" aria-label="Choose a district">
@@ -190,23 +182,24 @@
       </div>
     </section>
 
-    <section class="how section" id="how" aria-labelledby="how-title">
-      <div class="container how-grid">
-        <div class="how-intro"><p class="kicker">How it works</p><h2 id="how-title" class="display">Three steps. No forms.</h2></div>
-        <div class="how-cards">
-          <article class="how-card c-orange"><span>1</span><h3>Tell us a little.</h3><p>A few taps and a sentence or two. Nothing personal.</p></article>
-          <article class="how-card c-sky"><span>2</span><h3>AI finds the fit.</h3><p>It only picks from real Oldham options we've checked, and says why each one suits you.</p></article>
-          <article class="how-card c-sand"><span>3</span><h3>Take one step.</h3><p>Each match has a link, a contact and one small thing you can do this week.</p></article>
-        </div>
+    <section class="answers section" id="answers" aria-labelledby="answers-title">
+      <div class="container answers-grid">
+        <h2 id="answers-title" class="title reveal">What happens to <em>your answers</em></h2>
+        <dl class="facts">
+          <div class="reveal"><dt>First</dt><dd>Names, phone numbers, emails and addresses are taken out of whatever you type.</dd></div>
+          <div class="reveal"><dt>Then</dt><dd>The AI picks from the sixteen Oldham places we've checked, and says why each one might suit you. Anything it makes up gets thrown away.</dd></div>
+          <div class="reveal"><dt>If you're not okay</dt><dd>Some things, like having nowhere to sleep tonight, bring up who to call straight away. That part never waits on the AI.</dd></div>
+          <div class="reveal"><dt>After</dt><dd>Nothing is saved. If you use the mic, your voice goes through ElevenLabs to turn it into text.</dd></div>
+        </dl>
       </div>
-      <div class="container"><p class="statement" aria-label="Your next step should be easy to find, easy to understand and easy to take."><span>Your</span> <span>next</span> <span>step</span> <span>should</span> <span>be</span> <span>easy</span> <span>to</span> <span>find,</span> <span>easy</span> <span>to</span> <span>understand</span> <span>and</span> <span>easy</span> <span>to</span> <span>take.</span></p></div>
-    </section>
-
-    <section class="closing" aria-labelledby="closing-title">
-      <div class="container"><h2 id="closing-title" class="display">Let's go.</h2><a class="btn btn-light" href="#start">Find my path <span aria-hidden="true">&rarr;</span></a></div>
     </section>
   </main>
 
-  <footer class="footer"><div class="container"><strong>PATHLY</strong> <span>OLDHAM</span><p>A hackathon prototype. Opportunities are sample data; suggestions are a starting point, not a promise of a place.</p></div></footer>
+  <footer class="footer">
+    <div class="container footer-row">
+      <p class="footer-mark">Pathly <em>Oldham</em></p>
+      <p>Made for Green Circles, Build for Greater Manchester. A prototype, so check details with the organisation before you go. <a href="#start">Start again from the top.</a></p>
+    </div>
+  </footer>
 </body>
 </html>

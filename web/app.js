@@ -1,10 +1,6 @@
 // Pathly front end. Flow: path -> type -> about -> results (team wireframe). Talks to POST /api/match in api.py (FastAPI, which also serves this folder).
 
-const TYPES = {
-  voluntary: { label: 'Voluntary', color: 'c-peach' },
-  paid_work: { label: 'Paid work', color: 'c-blue' },
-  social_work: { label: 'Social', color: 'c-sand' },
-};
+const TYPES = { voluntary: 'Voluntary', paid_work: 'Paid work', social_work: 'Social' };
 const STEPS = ['path', 'type', 'about', 'results'];
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -16,14 +12,24 @@ const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
 function show(step) {
   $$('.step').forEach((el) => { el.hidden = el.dataset.step !== step; });
-  $$('.progress li').forEach((li, i) => li.classList.toggle('is-on', i <= STEPS.indexOf(step)));
+  $('#progress-bar').style.transform = `scaleX(${(STEPS.indexOf(step) + 1) / STEPS.length})`;
   if (step === 'about') {
     $$('.fields').forEach((el) => { el.hidden = el.dataset.for !== answers.path; });
   }
   stopSpeaking();
   const heading = $(`.step[data-step="${step}"] h3`);
   if (heading) { heading.tabIndex = -1; heading.focus({ preventScroll: true }); }
+  if (window.gsap && !reduceMotion) gsap.fromTo(`.step[data-step="${step}"]`, { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.6, ease: 'expo.out' });
 }
+
+// Smooth scroll to a section; Lenis when it is running, the browser otherwise.
+let lenis = null;
+function goTo(sel) {
+  const target = $(sel);
+  if (lenis) lenis.scrollTo(target, { offset: -24, duration: 1.4 });
+  else target.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' });
+}
+
 
 $$('[data-path]').forEach((btn) => btn.addEventListener('click', () => {
   answers.path = btn.dataset.path;
@@ -84,7 +90,7 @@ async function loadResults() {  // returns the API reply (or null), so the voice
       item.append(el('strong', null, d.title), el('span', null, d.why));
       return item;
     }));
-    if (directions.children.length) directions.prepend(el('p', 'kicker', 'Directions you could explore'));
+    if (directions.children.length) directions.prepend(el('p', 'eyebrow', 'Directions you could explore'));
     directions.hidden = !directions.children.length;
     list.replaceChildren(...data.matches.map(matchCard));
     startChat(data);
@@ -109,19 +115,17 @@ function el(tag, className, text) {
 }
 
 function matchCard(m) {
-  const type = TYPES[m.category] || { label: m.category, color: 'c-orange' };
-  const card = el('article', `match ${type.color}`);
-  const body = el('div', 'match-body');
-  body.append(el('span', 'match-tag', type.label), el('h4', null, m.name), el('p', 'meta', [m.provider, m.area].filter(Boolean).join(' / ')));
+  const body = el('article', 'match');
+  body.append(el('span', 'match-tag', TYPES[m.category] || m.category), el('h4', null, m.name), el('p', 'meta', [m.provider, m.area].filter(Boolean).join(' / ')));
   body.append(el('p', null, m.why));
   if (m.first_step) {
     const p = el('p');
-    p.append(el('strong', null, 'First step: '), document.createTextNode(m.first_step));
+    p.append(el('em', null, 'First step '), document.createTextNode(m.first_step));
     body.append(p);
   }
   if (m.barrier_tip) {
     const p = el('p', 'tip');
-    p.append(el('strong', null, 'Tip: '), document.createTextNode(m.barrier_tip));
+    p.append(el('em', null, 'Tip '), document.createTextNode(m.barrier_tip));
     body.append(p);
   }
   const contact = [m.phone && `Phone: ${m.phone}`, m.contact && `Contact: ${m.contact}`].filter(Boolean).join('  /  ');
@@ -140,8 +144,7 @@ function matchCard(m) {
   }
   actions.append(sayButton(() => [m.name, m.why, m.first_step && `First step: ${m.first_step}`, m.phone && `Phone ${m.phone}`].filter(Boolean).join('. ')));
   body.append(actions);
-  card.append(body);
-  return card;
+  return body;
 }
 
 // ---- Ask Pathly (DeepSeek chat about the matches shown, via /api/chat) ----
@@ -158,7 +161,7 @@ function startChat(data) {
 
 function suggest(questions) {
   $('#ask-suggest').replaceChildren(...questions.slice(0, 3).map((q) => {
-    const b = el('button', 'chip c-sky', q);
+    const b = el('button', 'chip', q);
     b.type = 'button';
     b.addEventListener('click', () => ask(q));
     return b;
@@ -333,7 +336,7 @@ lanes.forEach((lane) => {
 $$('[data-pick]').forEach((btn) => btn.addEventListener('click', () => {
   answers.type = btn.dataset.pick;
   show(answers.path ? 'about' : 'path');
-  $('#start').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' });
+  goTo('#start');
 }));
 
 // ---- Map hook (Akshita's Oldham map plugs in here; see web/README.md) -----
@@ -384,7 +387,7 @@ async function findOpportunities(params = {}) {
   });
   setDistrict(pick('district', DISTRICTS) || 'Anywhere in Oldham');
   show('results');
-  $('#start').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' });
+  goTo('#start');
   const data = await loadResults();
   if (!data) return 'The opportunity search is not working right now. Suggest they use the form on the page instead.';
   return {
@@ -439,50 +442,42 @@ mic.addEventListener('click', () => {
 
 // ---- Motion ---------------------------------------------------------------
 
-const words = [
-  ['volunteer role', 'var(--peach)'], ['first job', 'var(--blue)'], ['apprenticeship', 'var(--sand)'],
-  ['youth club', 'var(--orange)'], ['taster day', 'var(--sky)'],
-];
-const rotator = $('#rotator');
-let wordIndex = 0;
-function nextWord() {
-  wordIndex = (wordIndex + 1) % words.length;
-  const [text, color] = words[wordIndex];
-  const swap = () => { rotator.textContent = text; rotator.style.background = color; rotator.style.color = color.includes('blue') ? '#fff' : ''; };
-  if (window.gsap) {
-    gsap.timeline().to(rotator, { yPercent: -60, opacity: 0, duration: 0.25, ease: 'power2.in', onComplete: swap })
-      .fromTo(rotator, { yPercent: 60, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.4, ease: 'power2.out' });
-  } else {
-    swap();
-  }
-}
-
-if (reduceMotion) {
-  $('.trail').pauseAnimations();
-} else {
-  setInterval(nextWord, 3200);
+// The dot field behind the hero (React Bits DotField, ported in dotfield.js). Ink-printed so it stays crisp on paper.
+if (window.DotField) {
+  DotField($('#hero-dots'), {
+    lightMode: true, gradientFrom: '#F26B1D', gradientTo: '#1A120B', gradientAngle: 160, glowColor: '#F26B1D',
+    dotRadius: 1.4, dotSpacing: 16, baseOpacity: 0.28, cursorRadius: 220, bulgeStrength: 0.5, glowRadius: 150,
+    waveAmplitude: reduceMotion ? 0 : 3, speed: 0.5,
+  });
 }
 
 if (window.gsap && window.ScrollTrigger && !reduceMotion) {
   gsap.registerPlugin(ScrollTrigger);
-  const trail = $('#trail-path');
-  const length = trail.getTotalLength();
 
-  gsap.timeline({ defaults: { ease: 'power3.out' } })
-    .from('.wordmark span', { yPercent: 110, opacity: 0, stagger: 0.06, duration: 0.8 })
-    .fromTo(trail, { strokeDashoffset: length, strokeDasharray: `${length} ${length}` }, { strokeDashoffset: 0, duration: 1.6, ease: 'power2.inOut',
-      onComplete: () => { trail.style.strokeDasharray = ''; trail.style.strokeDashoffset = ''; } }, 0.2)
-    .from('.stop', { scale: 0, transformOrigin: 'center', stagger: 0.15, duration: 0.5, ease: 'power2.out' }, 0.9)
-    .from('.hero-line, .hero-actions', { y: 30, opacity: 0, stagger: 0.12, duration: 0.7 }, 0.5)
-    .from('.ticker, .index a', { y: 20, opacity: 0, stagger: 0.05, duration: 0.5 }, 0.9);
+  if (window.Lenis) {
+    lenis = new Lenis({ lerp: 0.09 });
+    lenis.on('scroll', ScrollTrigger.update);
+    gsap.ticker.add((t) => lenis.raf(t * 1000));
+    gsap.ticker.lagSmoothing(0);
+    $$('a[href^="#"]').forEach((a) => a.addEventListener('click', (e) => {
+      if (a.getAttribute('href').length < 2) return;
+      e.preventDefault();
+      goTo(a.getAttribute('href'));
+    }));
+  }
 
+  gsap.timeline({ defaults: { ease: 'expo.out' } })
+    .from('.headline .line > span', { yPercent: 105, duration: 1.3, stagger: 0.09 })
+    .from('.voice, .hero-main .eyebrow, .hero-side', { y: 24, opacity: 0, duration: 1, stagger: 0.08 }, 0.25)
+    .from('.marquee', { opacity: 0, duration: 1.2 }, 0.6);
 
-  gsap.from('.how-card', { x: 60, opacity: 0, stagger: 0.12, duration: 0.6, scrollTrigger: { trigger: '.how-cards', start: 'top 80%' } });
-  gsap.fromTo('.statement span', { opacity: 0.15 }, { opacity: 1, stagger: 0.1, ease: 'none',
-    scrollTrigger: { trigger: '.statement', start: 'top 85%', end: 'bottom 45%', scrub: 1 } });
-  gsap.from('.choice', { y: 30, opacity: 0, stagger: 0.08, duration: 0.5, scrollTrigger: { trigger: '#guide', start: 'top 80%' } });
+  // The headline drifts up and fades a little as you scroll off the hero.
+  gsap.to('.hero-main', { yPercent: -12, opacity: 0.4, ease: 'none', scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true } });
 
-  gsap.matchMedia().add('(min-width: 901px)', () => {
-    ScrollTrigger.create({ trigger: '.how-grid', pin: '.how-intro', start: 'top top+=60', endTrigger: '.how-cards', end: 'bottom bottom-=60', pinSpacing: false });
+  ScrollTrigger.batch('.reveal', {
+    start: 'top 85%',
+    onEnter: (els) => gsap.from(els, { y: 40, opacity: 0, duration: 1.1, stagger: 0.1, ease: 'expo.out', overwrite: true }),
+    once: true,
   });
+  gsap.from('.choice', { y: 20, opacity: 0, stagger: 0.07, duration: 0.9, ease: 'expo.out', scrollTrigger: { trigger: '#guide', start: 'top 80%' } });
 }
