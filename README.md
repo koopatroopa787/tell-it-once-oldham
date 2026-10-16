@@ -86,6 +86,12 @@ Run the offline tests with `pytest`. They need no API key.
 
 Pathly uses `DEEPSEEK_MODEL=deepseek-flash`. Only the Tell It Once modules (`triage.py`, `eval_bias.py`) still use Anthropic.
 
+## Who it's for
+
+18 to 24 year olds in Oldham who are economically inactive or underemployed. At 18 the support built around young people stops, many programmes only open once you claim Universal Credit or turn 19, and graduates in jobs below their skills (stacking shelves, sales floor) lose access to employment support because they're in work. Pathly doesn't replace the mainstream services. It works out which ones a person can still use, and when, then points them there and to local places to try.
+
+The chat asks for situation (not working or studying, working below what they want, just graduated, studying), age band and Universal Credit status, and `/api/match` returns `routes` (now, worth checking, later) alongside the AI-picked local matches. GMCVO was on the original list but closed in November 2024, so Oldham's voluntary sector body, Action Together, is used instead. The MBacc is a 14 to 18 technical pathway, so it isn't a referral for 18+.
+
 ## What is in here
 
 | File | What it does |
@@ -99,7 +105,8 @@ Pathly uses `DEEPSEEK_MODEL=deepseek-flash`. Only the Tell It Once modules (`tri
 | `documents.py` | Reads uploaded PDF, Word and text CVs |
 | `safety.py` | PII redaction and fixed crisis rules, both run before the AI sees anything |
 | `directory.py` | Loads an opportunity or service list and formats it for the prompt |
-| `data/` | 16 real Oldham opportunities (`opportunities.json`, checked 16 Oct 2026), plus the Tell It Once sample services and personas |
+| `routes.py` | Fixed rules (no AI) for which mainstream services someone can use from age, situation and Universal Credit status: DWP careers adviser, Youth Guarantee, Jobs Guarantee, in-work progression, the Youth Hub, Empower Oldham. Each cites its GOV.UK or provider page |
+| `data/` | 18 real Oldham opportunities (`opportunities.json`, checked 16 Oct 2026), plus the Tell It Once sample services and personas |
 
 ## How it stays safe
 

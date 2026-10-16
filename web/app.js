@@ -4,7 +4,7 @@
 
 const TYPES = { voluntary: 'Voluntary', paid_work: 'Paid work', social_work: 'Social' };
 const DISTRICTS = ['Anywhere in Oldham', 'Central', 'East', 'North', 'South', 'West'];
-const FIELDS = ['path', 'type', 'district', 'hobbies', 'studies', 'interests', 'experience'];
+const FIELDS = ['path', 'situation', 'age', 'universal_credit', 'type', 'district', 'hobbies', 'studies', 'interests', 'experience'];
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const answers = {};
@@ -37,15 +37,47 @@ const UPLOAD = 'upload';
 const has = (re) => (text) => re.test(text.toLowerCase());
 const QUESTIONS = [
   {
-    key: 'path', step: 'Where you are now', title: 'Studying, or exploring?',
-    say: () => "Hi, I'm Pathly. I'll ask a few quick things, then show you places in Oldham worth trying. First up: are you studying at the moment, or working out what's next?",
+    // Sets `path` too (student or explore), which the matcher and the full map still use.
+    key: 'situation', step: 'Where you are now', title: "What's going on for you?",
+    say: () => "Hi, I'm Pathly. Once you're 18, a lot of support stops being handed to you, so I'll work out which free services you can still use, then find places in Oldham. First: what's going on for you right now?",
     options: () => [
-      { value: 'student', label: "I'm studying", desc: 'School, college, sixth form or uni' },
-      { value: 'explore', label: "I'm exploring my options", desc: "Not studying right now, or working out what's next" },
+      { value: 'not_working', label: 'Not working or studying', desc: 'Left school or college, between things, or at home' },
+      { value: 'underemployed', label: 'Working, but not in what I want', desc: 'A shop or zero-hours job, or below what you trained for' },
+      { value: 'graduate', label: 'Just finished college or uni', desc: 'Looking for work in your field' },
+      { value: 'student', label: 'Studying', desc: 'At college or uni now' },
     ],
-    // Explore first, so "not at school" or "left college" isn't read as studying.
-    read: (t) => (has(/explor|\bnot\b|\b(don|didn|aren|isn|haven|ain|can)'?t\b|\bno\b|left|finish|leav|dropped|nothing|neet|options|next|figur/)(t) ? 'explore'
-      : has(/stud|school|college|uni\b|universit|sixth|gcse|a.?level|btec|t.?level|course|year \d/)(t) ? 'student' : null),
+    // Not working first, so "not at college" isn't read as studying. Then "I work at Tesco" before graduate,
+    // so a graduate on a shop floor counts as underemployed, but "graduated, looking for work" doesn't.
+    read: (t) => (has(/not (working|in work|studying|at)|unemploy|no job|out of work|nothing|neet|between|inactive|at home|left (school|college)|dropped/)(t) ? 'not_working'
+      : has(/\bi work\b|working (at|in|for)|my job|job (at|in)|tesco|shop|retail|part.?time|zero.?hours|stuck|below/)(t) ? 'underemployed'
+      : has(/graduat|finished (uni|college|my degree)|degree|left uni/)(t) ? 'graduate'
+        : has(/work|job|shop|tesco|retail|part.?time|zero|stuck|field|below/)(t) ? 'underemployed'
+          : has(/stud|college|uni\b|universit|course|a.?level|btec/)(t) ? 'student' : null),
+  },
+  {
+    key: 'age', step: 'Your age', title: 'How old are you?',
+    say: () => 'How old are you? It changes what you can get: some help stops at 19, 21 or 25.',
+    options: () => [
+      { value: '18', label: '18' }, { value: '19_21', label: '19 to 21' }, { value: '22_24', label: '22 to 24' },
+      { value: '25_plus', label: '25 or over' }, { value: 'under_18', label: 'Under 18' },
+    ],
+    read: (t) => {
+      const n = Number((t.match(/\d{2}/) || [])[0]);
+      if (!n) return has(/eighteen/)(t) ? '18' : null;
+      return n < 18 ? 'under_18' : n === 18 ? '18' : n <= 21 ? '19_21' : n <= 24 ? '22_24' : '25_plus';
+    },
+  },
+  {
+    key: 'universal_credit', step: 'Benefits', title: 'Are you on Universal Credit?',
+    say: () => (answers.age === 'under_18'
+      ? "Pathly is made for 18 and over, but I'll still show you what's around. Are you getting Universal Credit?"
+      : "Are you getting Universal Credit? Lots of the free programmes for 18 to 24s only open up once you claim, so it's worth knowing."),
+    options: () => [
+      { value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' },
+      { value: 'not_sure', label: "Not sure, or I'd rather not say" },
+    ],
+    read: (t) => (has(/sure|know|rather|skip|dunno|maybe/)(t) ? 'not_sure'
+      : has(/\b(no|nope|nah|not)\b|n'?t\b/)(t) ? 'no' : has(/\b(yes|yeah|yep|ye|i do|i am|claim|on it)\b/)(t) ? 'yes' : null),
   },
   {
     key: 'type', step: 'What you want', title: 'What are you after?',
@@ -147,6 +179,7 @@ async function reply(text, value) {
     return;
   }
   if (key === 'district') setDistrict(v); else answers[key] = v;
+  if (key === 'situation') answers.path = v === 'student' ? 'student' : 'explore';
   if (key === 'type') document.dispatchEvent(new CustomEvent('pathly:type', { detail: { type: v } }));
   await next();
 }
@@ -187,6 +220,7 @@ function showResults(data) {
     const row = line('ai alert', data.crisis.message);
     row.setAttribute('role', 'alert');
   }
+  if ((data.routes || []).length) showRoutes(data.routes);
   if (data.summary) line('ai', data.summary);
   if ((data.possible_directions || []).length) {
     const row = line('ai wide');
@@ -254,6 +288,28 @@ async function showJobs(row) {
 
 // Things a young person would ask next. The AI's follow_up_questions are questions for them, so they don't fit here.
 const STARTERS = ['Which one should I try first?', 'What should I say when I ring?', 'What do I need to know before I go?'];
+
+// The mainstream services first: Pathly points people at them rather than replacing them (rules in routes.py).
+const ROUTE_TAG = { now: 'You can use this now', check: 'Worth checking', later: 'Later on' };
+function showRoutes(list) {
+  line('ai', "First, the free services that fit where you are. They're the main thing; I'm just the way in.");
+  const row = line('ai wide');
+  const box = el('div', 'routes');
+  list.forEach((r) => {
+    const card = el('div', `route is-${r.status}`);
+    card.append(el('span', 'route-tag', ROUTE_TAG[r.status]), el('strong', null, r.name), el('span', 'route-by', r.provider),
+      el('p', null, r.why), el('p', 'route-how', r.how));
+    const acts = el('div', 'route-acts');
+    if (r.phone) { const call = el('a', 'mini', `Call ${r.phone}`); call.href = `tel:${r.phone.replace(/\s/g, '')}`; acts.append(call); }
+    const site = el('a', 'mini', 'Website');
+    site.href = r.link; site.target = '_blank'; site.rel = 'noopener noreferrer';
+    acts.append(site);
+    card.append(acts);
+    box.append(card);
+  });
+  row.append(box);
+  if (!reduceMotion && window.gsap) gsap.from(box.children, { y: 20, opacity: 0, stagger: 0.07, duration: 0.7, ease: 'expo.out' });
+}
 
 function suggest(questions) {
   const list = (questions || []).slice(0, 3).map((q) => ({ value: q, label: q }));
@@ -515,6 +571,8 @@ async function findOpportunities(params = {}) {
   Object.keys(answers).forEach((k) => delete answers[k]);
   answers.path = pick('path', ['student', 'explore']) || 'explore';
   answers.type = pick('type', Object.keys(TYPES)) || 'voluntary';
+  [['situation', ['not_working', 'underemployed', 'graduate', 'student']], ['age', ['under_18', '18', '19_21', '22_24', '25_plus']],
+    ['universal_credit', ['yes', 'no', 'not_sure']]].forEach(([k, allowed]) => { if (pick(k, allowed)) answers[k] = params[k]; });
   ['hobbies', 'studies', 'interests', 'experience'].forEach((k) => {
     if (typeof params[k] === 'string' && params[k].trim()) answers[k] = params[k].trim().slice(0, 1000);
   });

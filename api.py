@@ -18,6 +18,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 import config
 import documents
 import jobs
+import routes
 from db import Database, session_id
 import questions
 from deepseek.matcher import Matcher
@@ -55,6 +56,9 @@ class MatchRequest(BaseModel):
 
     path: Literal["student", "explore"]
     type: Literal["voluntary", "paid_work", "social_work"]
+    situation: Literal["not_working", "underemployed", "graduate", "student"] | None = None
+    age: Literal["under_18", "18", "19_21", "22_24", "25_plus"] | None = None
+    universal_credit: Literal["yes", "no", "not_sure"] | None = None
     district: str | None = None
     hobbies: str | None = Field(None, max_length=TEXT_LIMIT)
     studies: str | None = Field(None, max_length=TEXT_LIMIT)
@@ -94,8 +98,22 @@ class Direction(BaseModel):
     why: str
 
 
+class Route(BaseModel):
+    """A mainstream service the person can use, from fixed rules in routes.py (never the AI)."""
+
+    name: str
+    provider: str
+    status: Literal["now", "check", "later"]
+    why: str
+    how: str
+    phone: str = ""
+    link: str
+    source: str
+
+
 class MatchResponse(BaseModel):
     crisis: Crisis | None
+    routes: list[Route] = []
     summary: str = ""
     strengths: list[str] = []
     possible_directions: list[Direction] = []
@@ -196,6 +214,7 @@ def match(request: MatchRequest, http: Request) -> MatchResponse:
         )
     response = MatchResponse(
         crisis=crisis,
+        routes=[Route(**r) for r in routes.find(request.age, request.situation, request.universal_credit)],
         summary="" if crisis else result.summary,  # on a crisis the matcher's summary repeats the crisis message
         strengths=result.strengths,
         possible_directions=[Direction(**d) for d in result.possible_directions],

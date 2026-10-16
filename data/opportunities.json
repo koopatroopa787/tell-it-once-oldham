@@ -128,13 +128,13 @@
       "category": "paid_work",
       "area": "All Oldham",
       "description": "A paid six-month job, 25 hours a week, with wages funded by the government, to build experience and a reference.",
-      "who_it_is_for": "18 to 21 year olds who have been on Universal Credit and looking for work for 18 months or more.",
+      "who_it_is_for": "18 to 24 year olds who have been on Universal Credit and looking for work for 18 months or more.",
       "how_to_access": "Ask your Jobcentre Plus work coach whether you could be referred.",
-      "link": "https://www.gmchamber.co.uk/posts/how-your-business-can-benefit-from-a-jobs-guarantee-placement",
+      "link": "https://www.gov.uk/government/publications/jobs-guarantee",
       "phone": "",
       "contact": "",
       "verified_on": "2026-10-16",
-      "source": "https://www.gmchamber.co.uk/posts/how-your-business-can-benefit-from-a-jobs-guarantee-placement"
+      "source": "https://www.gov.uk/government/publications/jobs-guarantee"
     },
     {
       "id": "work-apprenticeships",
@@ -153,18 +153,18 @@
     },
     {
       "id": "work-careers-advice",
-      "name": "National Careers Service",
-      "provider": "National Careers Service",
+      "name": "Free careers adviser",
+      "provider": "DWP Jobs and Careers Service",
       "category": "paid_work",
       "area": "All Oldham",
-      "description": "Free careers advice, CV help and skills checks, online or by phone.",
-      "who_it_is_for": "13 and over.",
-      "how_to_access": "Use the website or ask to speak to an adviser.",
-      "link": "https://nationalcareers.service.gov.uk",
-      "phone": "",
+      "description": "Free one-to-one careers advice from a qualified adviser: what to aim for, CVs, courses and changing direction. Since 1 October 2026 the National Careers Service's advisers are part of DWP.",
+      "who_it_is_for": "Anyone 18 or over in England, including people who are already working. Under 18 and not in education or training can also use it.",
+      "how_to_access": "Call 0800 072 0288, Monday to Friday 8am to 6pm, free from landlines and most mobiles.",
+      "link": "https://nationalcareers.service.gov.uk/help-and-support",
+      "phone": "0800 072 0288",
       "contact": "",
       "verified_on": "2026-10-16",
-      "source": "https://nationalcareers.service.gov.uk"
+      "source": "https://nationalcareers.service.gov.uk/help-and-support"
     },
     {
       "id": "social-youth-clubs",
@@ -240,6 +240,36 @@
       "contact": "",
       "verified_on": "2026-10-16",
       "source": "https://www.oldham.gov.uk/homepage/1581/oldham_youth_services"
+    },
+    {
+      "id": "work-youth-guarantee",
+      "name": "Youth Guarantee: training, work experience or an apprenticeship",
+      "provider": "Jobcentre Plus",
+      "category": "paid_work",
+      "area": "All Oldham",
+      "description": "Support from a work coach to get ready for work and into a job: sector-based work academies, 2 to 8 weeks of work experience, CV and interview sessions, or an apprenticeship. Travel and childcare costs can be paid back, and Universal Credit carries on.",
+      "who_it_is_for": "16 to 24 year olds getting Universal Credit.",
+      "how_to_access": "Ask your work coach at the jobcentre, at the start of your claim or later.",
+      "link": "https://www.gov.uk/guidance/help-to-find-work-for-universal-credit-claimants-aged-16-to-24",
+      "phone": "",
+      "contact": "",
+      "verified_on": "2026-10-16",
+      "source": "https://www.gov.uk/guidance/help-to-find-work-for-universal-credit-claimants-aged-16-to-24"
+    },
+    {
+      "id": "work-in-work-progression",
+      "name": "Help to earn more in the job you have",
+      "provider": "Jobcentre Plus",
+      "category": "paid_work",
+      "area": "All Oldham",
+      "description": "If you're working but on low pay, a work coach can help with CVs, skills training and moving up or into the field you want. Travel and childcare costs can be covered.",
+      "who_it_is_for": "People in work on low earnings who get Universal Credit.",
+      "how_to_access": "Send a message in your Universal Credit journal asking for in-work progression support.",
+      "link": "https://www.gov.uk/government/news/government-drive-to-help-workers-on-universal-credit-boost-prospects",
+      "phone": "",
+      "contact": "",
+      "verified_on": "2026-10-16",
+      "source": "https://www.gov.uk/government/news/government-drive-to-help-workers-on-universal-credit-boost-prospects"
     }
   ]
 }

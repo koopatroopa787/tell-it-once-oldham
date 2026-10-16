@@ -20,7 +20,7 @@ from deepseek.gateway import DeepSeekUnavailable, create_deepseek_client
 from directory import Directory
 from safety import check_crisis, redact_pii
 
-ANSWER_FIELDS = ("path", "type", "hobbies", "studies", "interests", "experience", "district")
+ANSWER_FIELDS = ("path", "situation", "age", "universal_credit", "type", "hobbies", "studies", "interests", "experience", "district")
 ROUTE_TYPES = ("job", "apprenticeship", "training", "volunteering", "community")
 CONFIDENCE_LEVELS = ("high", "medium", "low")
 URL_PATTERN = re.compile(r"(?:https?://|www\.)\S+", re.IGNORECASE)
@@ -33,6 +33,8 @@ Recommend three to five items from the APPROVED DEMO DIRECTORY only and use exac
 and nearby areas, while showing a useful alternative when appropriate. Never invent providers, links, contact details,
 vacancies, funding or eligibility. Never promise a place. Use plain, warm language and small actions for this week.
 Personal details are replaced with tags such as [PHONE]; never ask for or reconstruct them.
+Most people are 18 to 24 and not in work or study, or working below their skills. Use situation, age and universal_credit
+only to respect each item's who_it_is_for; don't recommend items they are clearly too old or too young for.
 
 APPROVED DEMO DIRECTORY (contact details still need human checking):
 {opportunities}
