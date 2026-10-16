@@ -1,0 +1,90 @@
+name: Set voice keys on the server
+
+# Run by hand (Actions > Set voice keys on the server > Run workflow). Joins the tailnet, writes the
+# ElevenLabs key and agent id into ~/pathly/.env on the server, restarts the container, and checks
+# /api/voice. The keys travel over SSH stdin, never as command arguments, and are never printed.
+#
+# Secrets it needs (Settings > Secrets and variables > Actions):
+#   ELEVENLABS_KEY       ElevenLabs API key
+#   ELEVENLABS_AGENT_ID  ElevenLabs agent id (optional; without it, Listen and dictation still work)
+#   TS_AUTHKEY           Tailscale auth key: ephemeral, pre-approved, tagged (for example tag:ci)
+#   SERVER_SSH_KEY       private half of a deploy key whose public half is in the server's ~/.ssh/authorized_keys
+#   SERVER_HOST          the server's Tailscale IP or MagicDNS name
+#   SERVER_USER          the SSH user that owns ~/pathly and can run docker
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: set-voice-keys
+  cancel-in-progress: false
+
+jobs:
+  set-keys:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check the secrets are there
+        env:
+          ELEVENLABS_KEY: ${{ secrets.ELEVENLABS_KEY }}
+          TS_AUTHKEY: ${{ secrets.TS_AUTHKEY }}
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+        run: |
+          missing=""
+          for name in ELEVENLABS_KEY TS_AUTHKEY SERVER_SSH_KEY SERVER_HOST SERVER_USER; do
+            [ -n "${!name}" ] || missing="$missing $name"
+          done
+          if [ -n "$missing" ]; then echo "::error::Missing secrets:$missing"; exit 1; fi
+
+      - name: Join the tailnet
+        uses: tailscale/github-action@v3
+        with:
+          authkey: ${{ secrets.TS_AUTHKEY }}
+
+      - name: Set up SSH
+        env:
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SERVER_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+      - name: Write the keys and restart Pathly
+        env:
+          ELEVENLABS_KEY: ${{ secrets.ELEVENLABS_KEY }}
+          ELEVENLABS_AGENT_ID: ${{ secrets.ELEVENLABS_AGENT_ID }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+        run: |
+          # Server side: read the two values from stdin, replace any old lines, keep .env private, restart.
+          printf '%s\n%s\n' "$ELEVENLABS_KEY" "$ELEVENLABS_AGENT_ID" | ssh -i ~/.ssh/deploy_key \
+            -o StrictHostKeyChecking=accept-new -o BatchMode=yes "$SERVER_USER@$SERVER_HOST" \
+            'set -e; cd ~/pathly; IFS= read -r key; IFS= read -r agent || true; [ -n "$key" ]
+             tmp=$(mktemp .env.XXXXXX); chmod 600 "$tmp"
+             drop="ELEVENLABS_API_KEY"; [ -z "$agent" ] || drop="$drop|ELEVENLABS_AGENT_ID"  # no new agent id: keep the old one
+             grep -v -E "^($drop)=" .env > "$tmp" 2>/dev/null || true
+             printf "ELEVENLABS_API_KEY=%s\n" "$key" >> "$tmp"
+             if [ -n "$agent" ]; then printf "ELEVENLABS_AGENT_ID=%s\n" "$agent" >> "$tmp"; fi
+             mv "$tmp" .env
+             docker restart pathly > /dev/null'
+
+      - name: Check voice is on
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+        run: |
+          # The container reinstalls requirements on start, so give it up to two minutes.
+          for i in $(seq 24); do
+            if curl -fsS -m 5 "http://$SERVER_HOST:8010/api/voice" | grep -q '"enabled":true'; then echo "Voice is on."; exit 0; fi
+            sleep 5
+          done
+          echo "::error::/api/voice did not report enabled. Check the key, and docker logs pathly on the server."
+          exit 1
+
+      - name: Remove the SSH key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key

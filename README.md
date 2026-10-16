@@ -79,6 +79,16 @@ Response (a real reply, cut to one match):
 
 Run the offline tests with `pytest`. They need no API key.
 
+## Setting the voice keys on the server
+
+Keys never go in git. The **Set voice keys on the server** workflow (`.github/workflows/set-voice-keys.yml`, run by hand from the Actions tab) copies them from GitHub secrets into the server's `.env`, restarts the container and checks `/api/voice` reports `enabled`. One-time setup:
+
+1. **Deploy key.** Make a key pair just for this: `ssh-keygen -t ed25519 -f pathly_deploy -N "" -C pathly-actions`. Add `pathly_deploy.pub` to `~/.ssh/authorized_keys` on the server, and paste the private `pathly_deploy` file into the `SERVER_SSH_KEY` secret. Then delete both local files.
+2. **Tailscale.** In the Tailscale admin console, make an auth key that is ephemeral, reusable and pre-approved, with a tag such as `tag:ci`, and save it as `TS_AUTHKEY`. If your tailnet has ACLs, let `tag:ci` reach the server on ports 22 and 8010.
+3. **The rest.** `SERVER_HOST` (the server's Tailscale IP or MagicDNS name), `SERVER_USER` (the SSH user that owns `~/pathly`), `ELEVENLABS_KEY` and, for the spoken agent, `ELEVENLABS_AGENT_ID`. If the agent id secret is empty, an agent id already on the server is kept.
+
+Run it again whenever a key changes. To switch voice off, remove the lines from the server's `.env` and restart.
+
 ## Before the demo
 
 1. **Set the borough.** Change `BOROUGH` in `.env`. It flows through the API, the prompts and the opportunity list.
