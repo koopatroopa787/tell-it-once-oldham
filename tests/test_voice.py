@@ -91,3 +91,27 @@ def test_rate_limit_protects_your_credits(monkeypatch: pytest.MonkeyPatch) -> No
     monkeypatch.setattr(api, "voice_limiter", RateLimiter(2, 600))
     codes = [client.post("/api/speak", json={"text": "hi"}).status_code for _ in range(3)]
     assert codes == [200, 200, 429]
+
+
+def test_delivery_cues_are_dropped_but_redaction_tags_kept() -> None:
+    from voice import without_cues
+
+    assert without_cues("[happy] Nice one, being a student [laughs] gives us lots") == "Nice one, being a student gives us lots"
+    assert without_cues("Call [PHONE] today") == "Call [PHONE] today"
+
+
+def test_speak_never_reads_cues_aloud(monkeypatch: pytest.MonkeyPatch) -> None:
+    import voice as voice_module
+
+    sent = {}
+
+    def fake_post(url: str, **kwargs):
+        import httpx
+
+        sent.update(kwargs["json"])
+        return httpx.Response(200, content=b"ID3", request=httpx.Request("POST", url))
+
+    monkeypatch.setattr(voice_module.httpx, "post", fake_post)
+    voice_module.ElevenLabsClient(api_key="k", voice_id="v").speak("[happy] That's great that you're studying.")
+    assert sent["text"] == "That's great that you're studying."
+    assert sent["voice_settings"]["speed"] == 0.95

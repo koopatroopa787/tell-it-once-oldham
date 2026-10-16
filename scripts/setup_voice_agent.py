@@ -26,6 +26,7 @@ FIRST_MESSAGE = (
     "Are you studying at the moment, or exploring your options?"
 )
 PROMPT = """You are Pathly, a friendly voice guide for young people in Oldham. Keep every reply to one or two short sentences and ask one question at a time.
+Sound like a kind, patient youth worker: warm, gentle and encouraging, never salesy or over-excited. If they give a short or unclear answer, accept it and move on rather than asking the same question again.
 Find out, in this order:
 1. path: "student" if they are studying, otherwise "explore".
 2. type: "voluntary", "paid_work" or "social_work" (social means clubs, groups and activities).
@@ -35,6 +36,10 @@ Then call find_opportunities with what you heard. Read out the matches briefly, 
 If the tool returns a crisis message, say it first, calmly, before anything else.
 Never ask for or repeat a name, address, phone number, school name or date of birth. If they share one, do not use it.
 Only mention opportunities the tool returned. Never promise a place, a job or eligibility; say they can contact the provider to check."""
+
+
+# A little less stability sounds more human; slightly slower sounds kinder. Expressive mode stays on.
+DELIVERY = {"stability": 0.45, "similarity_boost": 0.8, "speed": 0.95}
 
 
 def _text(description: str, enum: list[str] | None = None) -> dict:
@@ -91,13 +96,34 @@ def post(path: str, key: str, body: dict) -> dict:
     return response.json()
 
 
+def update(key: str, env: dict[str, str]) -> None:
+    """Push the current first message, prompt, voice and delivery to the existing agent, keeping its tools."""
+    agent_id = env["ELEVENLABS_AGENT_ID"]
+    current = httpx.get(f"{API}/agents/{agent_id}", headers={"xi-api-key": key}, timeout=30)
+    if current.status_code >= 400:
+        sys.exit(f"Could not read agent {agent_id} ({current.status_code}): {current.text[:400]}")
+    tool_ids = current.json()["conversation_config"]["agent"]["prompt"].get("tool_ids") or []
+    response = httpx.patch(f"{API}/agents/{agent_id}", headers={"xi-api-key": key}, timeout=30, json={
+        "conversation_config": {
+            "agent": {"first_message": FIRST_MESSAGE, "prompt": {"prompt": PROMPT, "tool_ids": tool_ids}},
+            "tts": {"voice_id": env.get("ELEVENLABS_VOICE_ID") or "Xb7hH8MSUJpSbSDYk0k2", **DELIVERY},
+        },
+    })
+    if response.status_code >= 400:
+        sys.exit(f"ElevenLabs refused the update ({response.status_code}): {response.text[:400]}")
+    print(f"Updated the Pathly agent ({agent_id}) with the current voice and prompt.")
+
+
 def main() -> None:
     env = read_env()
     key = env.get("ELEVENLABS_API_KEY", "")
     if not key:
         sys.exit("Put ELEVENLABS_API_KEY in .env first (see .env.example).")
     if env.get("ELEVENLABS_AGENT_ID"):
-        print("ELEVENLABS_AGENT_ID is already set in .env; nothing to do.")
+        if "--update" not in sys.argv:
+            print("ELEVENLABS_AGENT_ID is already set in .env. Run with --update to push this script's voice and prompt to it.")
+            return
+        update(key, env)
         return
 
     tool_id = post("/tools", key, {"tool_config": TOOL})["id"]
@@ -105,7 +131,7 @@ def main() -> None:
         "name": "Pathly Oldham",
         "conversation_config": {
             "agent": {"first_message": FIRST_MESSAGE, "language": "en", "prompt": {"prompt": PROMPT, "tool_ids": [tool_id]}},
-            "tts": {"voice_id": env.get("ELEVENLABS_VOICE_ID") or "JBFqnCBsd6RMkjVDRZzb"},
+            "tts": {"voice_id": env.get("ELEVENLABS_VOICE_ID") or "Xb7hH8MSUJpSbSDYk0k2", **DELIVERY},  # Alice, British
         },
         "platform_settings": {"auth": {"enable_auth": True}},  # only signed URLs from /api/voice/session can start a call
     })

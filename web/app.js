@@ -93,7 +93,12 @@ const log = $('#talk-log');
 const input = $('#talk-input');
 const talk = { q: null, done: false, busy: false, ids: [], history: [], districtPicked: false };
 
-function line(who, text) {
+// The voice agent's expressive mode writes delivery cues like [happy] or [laughs]. The voice acts them out; the
+// chat should not show them. Only lowercase cues are removed, so redaction tags like [PHONE] stay visible.
+const withoutCues = (text) => String(text || '').replace(/\s*\[[a-z][a-z' -]{0,30}\]\s*/g, ' ').replace(/\s{2,}/g, ' ').trim();
+
+function line(who, raw) {
+  const text = who === 'ai' ? withoutCues(raw) : raw;
   const row = el('div', `msg ${who}`);
   if (text) row.append(el('p', null, text));
   if (who === 'ai' && text) row.append(sayButton(() => text));
@@ -416,7 +421,7 @@ function sayButton(getText) {
     btn.textContent = 'Loading...';
     try {
       const res = await fetch('/api/speak', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: getText().slice(0, 800) }),
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: withoutCues(getText()).slice(0, 800) }),
       });
       if (!res.ok) throw new Error(res.status);
       if (voice.button !== btn) return; // another button was pressed while this loaded

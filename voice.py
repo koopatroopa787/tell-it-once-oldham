@@ -6,12 +6,24 @@ Audio is passed straight through and never written to disk.
 
 from __future__ import annotations
 
+import re
 import time
 from collections import defaultdict, deque
 
 import httpx
 
 import config
+
+
+# A little less stability than the default sounds more human; slightly slower sounds kinder.
+VOICE_SETTINGS = {"stability": 0.45, "similarity_boost": 0.8, "style": 0.25, "use_speaker_boost": True, "speed": 0.95}
+
+_CUE = re.compile(r"\s*\[[a-z][a-z' -]{0,30}\]\s*")
+
+
+def without_cues(text: str) -> str:
+    """Remove lowercase delivery cues such as [happy]; uppercase redaction tags like [PHONE] are kept."""
+    return re.sub(r"\s{2,}", " ", _CUE.sub(" ", text)).strip()
 
 
 class VoiceUnavailable(RuntimeError):
@@ -48,11 +60,11 @@ class ElevenLabsClient:
         return response
 
     def speak(self, text: str) -> bytes:
-        """Text to MP3 audio."""
+        """Text to MP3 audio, in a warm, unhurried delivery. Expressive cues like [happy] are dropped, not read out."""
         response = self._post(
             f"/v1/text-to-speech/{self.voice_id}",
             params={"output_format": "mp3_44100_64"},
-            json={"text": text, "model_id": config.ELEVENLABS_TTS_MODEL},
+            json={"text": without_cues(text) or text, "model_id": config.ELEVENLABS_TTS_MODEL, "voice_settings": VOICE_SETTINGS},
         )
         return response.content
 
