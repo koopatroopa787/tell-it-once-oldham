@@ -204,6 +204,7 @@ async function startVoice() {
     const res = await fetch('/api/voice/session');
     if (!res.ok) throw new Error(res.status === 503 ? 'not set up yet' : 'service unavailable');
     const { signed_url: signedUrl } = await res.json();
+    if (!navigator.mediaDevices) throw new Error('the page needs to be opened over https'); // browsers only allow the mic on https or localhost
     await navigator.mediaDevices.getUserMedia({ audio: true });
     const { Conversation } = await import(ELEVENLABS_SDK);
     conversation = await Conversation.startSession({
