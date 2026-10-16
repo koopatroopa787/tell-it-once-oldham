@@ -11,7 +11,7 @@ pip install -r requirements.txt
 uvicorn api:app --reload
 ```
 
-Interactive docs are at http://localhost:8000/docs. Matching uses DeepSeek (`DEEPSEEK_API_KEY` and `MATCH_MODEL` in `.env`), the same provider as the chatbot. Without a key it still answers, using a simple match instead of the AI. Set `ALLOWED_ORIGINS` in `.env` to the website's address once it is deployed; the default allows the local React dev servers on ports 5173 and 3000.
+The demo website in `web/` is served at http://localhost:8000/ (see `web/README.md`). Interactive docs are at http://localhost:8000/docs. Matching uses DeepSeek (`DEEPSEEK_API_KEY` and `MATCH_MODEL` in `.env`), the same provider as the chatbot. Without a key it still answers, using a simple match instead of the AI. Set `ALLOWED_ORIGINS` in `.env` to the website's address once it is deployed; the default allows the local React dev servers on ports 5173 and 3000.
 
 | Endpoint | What it does |
 | --- | --- |

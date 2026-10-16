@@ -19,7 +19,7 @@ Hackathon: Green Circles Manchester, "Build for Greater Manchester". Our borough
 
 Product name: **Pathly**. This supersedes the phases below where they conflict; "Tell It Once" now refers only to the earlier connector tool. The app is now aimed at young people using it themselves.
 
-Pathly is a live website: a React front end (design not decided yet, so no UI code for now) calling a Python HTTP API. Streamlit has been removed. Run the API with `uvicorn api:app --reload`; docs at http://localhost:8000/docs.
+Pathly is a live website: a React front end (design not decided yet, so no UI code for now) calling a Python HTTP API. Streamlit has been removed. Run the API with `uvicorn api:app --reload`; docs at http://localhost:8000/docs. Until the React site exists, `web/` (plain HTML/CSS/JS + GSAP, orange shades plus petrol blue) is the demo front end, served by the API at http://localhost:8000/; see `web/README.md`, including the map contract and theme tokens for Akshita's Oldham map.
 
 Flow: Page 1 Student or Exploring for options -> Page 2 Voluntary, Paid work or Social work -> Page 3 (student: hobbies and current studies; exploring: interests and past work or experience, plus district) -> Results (AI matches with link, phone and contact).
 

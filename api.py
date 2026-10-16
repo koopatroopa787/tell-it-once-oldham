@@ -10,6 +10,7 @@ from typing import Literal, Optional
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 import config
@@ -62,6 +63,7 @@ class Match(BaseModel):
     name: str
     provider: str
     area: str = ""
+    category: str = ""
     why: str
     first_step: str
     phone: str = ""
@@ -111,6 +113,7 @@ def match(request: MatchRequest) -> MatchResponse:
                 name=opp["name"],
                 provider=opp["provider"],
                 area=opp.get("area") or "",
+                category=opp.get("category") or "",
                 why=m["why"],
                 first_step=m["first_step"],
                 phone=opp.get("phone") or "",
@@ -119,3 +122,7 @@ def match(request: MatchRequest) -> MatchResponse:
             )
         )
     return MatchResponse(crisis=crisis, matches=matches, used_ai=result.used_ai)
+
+
+# The plain HTML front end in web/ (until the React site exists). Mounted last so /api routes win.
+app.mount("/", StaticFiles(directory=config.ROOT / "web", html=True), name="web")
