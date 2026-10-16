@@ -143,5 +143,6 @@ def match(request: MatchRequest) -> MatchResponse:
     return MatchResponse(crisis=crisis, matches=matches, used_ai=result.used_ai)
 
 
-# The plain HTML front end in web/ (until the React site exists). Mounted last so /api routes win.
+# The plain HTML front ends: Akshita's Oldham map at /map, web/ at /. Mounted last so /api routes win.
+app.mount("/map", StaticFiles(directory=config.ROOT / "frontend", html=True), name="map")
 app.mount("/", StaticFiles(directory=config.ROOT / "web", html=True), name="web")

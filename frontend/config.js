@@ -6,5 +6,6 @@
   matches with the team's model. Leave it empty to use the matching built into app.js.
 */
 window.PATHLY_CONFIG = {
-  apiUrl: "http://localhost:8000",
+  // Served by the API itself (/map): same origin. The 5173 dev server and file:// talk to a local API.
+  apiUrl: location.protocol.startsWith("http") && location.port !== "5173" ? location.origin : "http://localhost:8000",
 };

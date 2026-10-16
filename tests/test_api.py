@@ -82,3 +82,9 @@ def test_voice_session_returns_signed_url(monkeypatch: pytest.MonkeyPatch) -> No
     monkeypatch.setattr(api.httpx, "get", fake_get)
     assert client.get("/api/voice/session").json() == {"signed_url": "wss://signed"}
     assert sent["headers"] == {"xi-api-key": "key"} and sent["params"] == {"agent_id": "agent_1"}
+
+
+def test_both_front_ends_are_served() -> None:
+    assert "Talk to Pathly" in client.get("/").text
+    assert "config.js" in client.get("/map/").text
+    assert client.get("/map/data/oldham-map.js").status_code == 200
