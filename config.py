@@ -21,7 +21,7 @@ MAX_TOKENS: int = int(os.getenv("MAX_TOKENS", "4000"))
 DEEPSEEK_API_KEY: str = os.getenv("DEEPSEEK_API_KEY", "")
 DEEPSEEK_MODEL: str = os.getenv("DEEPSEEK_MODEL") or os.getenv("MATCH_MODEL") or "deepseek-flash"
 DEEPSEEK_BASE_URL: str = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com/anthropic")
-DEEPSEEK_MAX_TOKENS: int = int(os.getenv("DEEPSEEK_MAX_TOKENS", "1400"))
+DEEPSEEK_MAX_TOKENS: int = int(os.getenv("DEEPSEEK_MAX_TOKENS", "2400"))
 DEEPSEEK_TIMEOUT_SECONDS: float = float(os.getenv("DEEPSEEK_TIMEOUT_SECONDS") or os.getenv("MATCH_TIMEOUT") or "30")
 
 # ElevenLabs. One key powers the hero voice chat (an Agent; the browser gets a 15-minute signed URL) and the
