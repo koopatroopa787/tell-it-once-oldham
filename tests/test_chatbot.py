@@ -5,8 +5,8 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 import config
+from deepseek.matcher import Matcher
 from directory import Directory
-from matcher import Matcher
 
 
 class ChatClient:

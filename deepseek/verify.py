@@ -12,8 +12,8 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import config
+from deepseek.matcher import Matcher
 from directory import Directory
-from matcher import Matcher
 
 
 def _fail(message: str) -> None:

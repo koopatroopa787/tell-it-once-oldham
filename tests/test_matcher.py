@@ -5,8 +5,8 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 import config
+from deepseek.matcher import Matcher
 from directory import Directory
-from matcher import Matcher
 
 
 class FakeClient:
@@ -142,10 +142,10 @@ def test_proxy_base_url_uses_the_openai_compatible_route(monkeypatch) -> None:
 
     import httpx
 
-    import matcher as matcher_module
+    from deepseek import matcher as matcher_module
 
     monkeypatch.setattr(config, "DEEPSEEK_BASE_URL", "http://127.0.0.1:4000")
-    monkeypatch.setattr(config, "DEEPSEEK_API_KEY", "test-key")
+    monkeypatch.setattr(config, "DEEPSEEK_API_KEY", "  test-key\r\n")
     sent: dict = {}
 
     def fake_post(url: str, **kwargs):
@@ -158,6 +158,7 @@ def test_proxy_base_url_uses_the_openai_compatible_route(monkeypatch) -> None:
     result = Matcher(_directory()).run({"path": "student", "type": "voluntary", "hobbies": "call 07700 900123"})
     assert result.used_ai and [m["opportunity_id"] for m in result.matches] == ["vol-dofe"]
     assert sent["url"] == "http://127.0.0.1:4000/chat/completions"
+    assert sent["headers"]["Authorization"] == "Bearer test-key"
     assert sent["json"]["extra_body"] == {"thinking": {"type": "disabled"}}
     assert sent["json"]["messages"][0]["role"] == "system"
     assert "07700" not in str(sent["json"]["messages"])

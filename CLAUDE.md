@@ -31,11 +31,11 @@ One owner per file so merges do not conflict:
 | --- | --- |
 | Questions and wording | `questions.py` |
 | HTTP API | `api.py`, `tests/test_api.py` |
-| AI matching | `matcher.py` |
+| AI matching | `deepseek/matcher.py` |
 | Real Oldham opportunities | `data/opportunities.json` (keep the fields; leave blank rather than guess) |
 | Website (once the design is agreed) | `frontend/` |
 
-Conventions: a new question = one entry in `QUESTIONS` in `questions.py` and one optional field on `MatchRequest` in `api.py`. `matcher.py` redacts PII, forces a tool call, drops ids not in the list, and falls back to a no-AI match, so the app runs without an API key. Open question: does "Social work" mean social care careers or community and social activities? The data currently covers community and social activities (youth clubs, Mahdlo, young carers).
+Conventions: a new question = one entry in `QUESTIONS` in `questions.py` and one optional field on `MatchRequest` in `api.py`. `deepseek/matcher.py` redacts PII, forces a tool call, drops ids not in the list, and falls back to a no-AI match, so the app runs without an API key. Open question: does "Social work" mean social care careers or community and social activities? The data currently covers community and social activities (youth clubs, Mahdlo, young carers).
 
 ## Non-negotiable rules
 
@@ -50,7 +50,7 @@ Conventions: a new question = one entry in `QUESTIONS` in `questions.py` and one
 
 ## Current state (already working)
 
-- `api.py`: Pathly's HTTP API (health, questions, match). `questions.py`, `matcher.py`.
+- `api.py`: Pathly's HTTP API (health, questions, match). `questions.py`, `deepseek/matcher.py`.
 - Tell It Once back end only (its Streamlit UI was removed; the phases below that mention `st.` or `app.py` predate this and need a web equivalent):
 - `triage.py`: system prompt, forced tool call `record_plan`, validation against the directory, offline response cache.
 - `safety.py`: PII redaction and crisis rules. `directory.py`, `store.py`, `plan_export.py` (printable plan).

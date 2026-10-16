@@ -6,7 +6,7 @@ Docs:      http://localhost:8000/docs
 
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Literal
 
 import httpx
 from fastapi import FastAPI, HTTPException, Request, Response
@@ -16,8 +16,8 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 import config
 import questions
+from deepseek.matcher import Matcher
 from directory import Directory
-from matcher import Matcher
 from safety import PII_LABELS, check_crisis, redact_pii
 from voice import ElevenLabsClient, RateLimiter, VoiceUnavailable
 
@@ -41,15 +41,15 @@ class MatchRequest(BaseModel):
 
     path: Literal["student", "explore"]
     type: Literal["voluntary", "paid_work", "social_work"]
-    district: Optional[str] = None
-    hobbies: Optional[str] = Field(None, max_length=TEXT_LIMIT)
-    studies: Optional[str] = Field(None, max_length=TEXT_LIMIT)
-    interests: Optional[str] = Field(None, max_length=TEXT_LIMIT)
-    experience: Optional[str] = Field(None, max_length=TEXT_LIMIT)
+    district: str | None = None
+    hobbies: str | None = Field(None, max_length=TEXT_LIMIT)
+    studies: str | None = Field(None, max_length=TEXT_LIMIT)
+    interests: str | None = Field(None, max_length=TEXT_LIMIT)
+    experience: str | None = Field(None, max_length=TEXT_LIMIT)
 
     @field_validator("district")
     @classmethod
-    def _known_district(cls, value: Optional[str]) -> Optional[str]:
+    def _known_district(cls, value: str | None) -> str | None:
         if value is not None and value not in questions.DISTRICTS:
             raise ValueError(f"district must be one of {questions.DISTRICTS}")
         return value
@@ -81,7 +81,7 @@ class Direction(BaseModel):
 
 
 class MatchResponse(BaseModel):
-    crisis: Optional[Crisis]
+    crisis: Crisis | None
     summary: str = ""
     strengths: list[str] = []
     possible_directions: list[Direction] = []

@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 import config
-import deepseek_gateway
+from deepseek import gateway as deepseek_gateway
 
 
 def test_gateway_requires_a_server_side_key(monkeypatch) -> None:

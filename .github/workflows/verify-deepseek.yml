@@ -39,4 +39,4 @@ jobs:
         run: python -m pytest -q
 
       - name: Verify live matching and chat
-        run: python scripts/verify_deepseek.py
+        run: python -m deepseek.verify

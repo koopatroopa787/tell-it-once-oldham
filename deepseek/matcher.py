@@ -7,16 +7,16 @@ crisis messages remain available when the API is missing or unavailable.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 import json
 import re
+from dataclasses import dataclass, field
 from typing import Any
 from urllib.parse import urlparse
 
 import httpx
 
 import config
-from deepseek_gateway import DeepSeekUnavailable, create_deepseek_client
+from deepseek.gateway import DeepSeekUnavailable, create_deepseek_client
 from directory import Directory
 from safety import check_crisis, redact_pii
 
@@ -150,12 +150,13 @@ def _is_anthropic_endpoint(url: str) -> bool:
 
 def _call_openai_tool(model: str, *, system: str, tool: dict, messages: list[dict], max_tokens: int) -> dict:
     """The same forced tool call through an OpenAI-compatible endpoint, such as the LiteLLM proxy on the demo server."""
-    if not config.DEEPSEEK_API_KEY:
+    api_key = config.DEEPSEEK_API_KEY.strip()
+    if not api_key:
         raise DeepSeekUnavailable("DEEPSEEK_API_KEY is not configured.")
     function = {"name": tool["name"], "description": tool["description"], "parameters": tool["input_schema"]}
     response = httpx.post(
         f"{config.DEEPSEEK_BASE_URL.rstrip('/')}/chat/completions",
-        headers={"Authorization": f"Bearer {config.DEEPSEEK_API_KEY}"},
+        headers={"Authorization": f"Bearer {api_key}"},
         json={
             "model": model,
             "max_tokens": max_tokens,
@@ -201,7 +202,7 @@ class Matcher:
         try:
             raw = self._call_analysis(clean)
             result = self._validate_analysis(raw, clean.get("type"))
-        except Exception:
+        except Exception:  # noqa: BLE001 - matching must fall back during any provider failure
             return self._fallback_result(clean)
         if not result.matches:
             return self._fallback_result(clean)
@@ -235,7 +236,7 @@ class Matcher:
         try:
             raw = self._call_chat(_clean_answers(answers), allowed_ids, clean_history, clean_message)
             return self._validate_chat(raw, allowed_ids)
-        except Exception:
+        except Exception:  # noqa: BLE001 - chat must fall back during any provider failure
             return self._chat_fallback(allowed_ids)
 
     def _call_analysis(self, answers: dict) -> dict:

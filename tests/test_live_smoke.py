@@ -6,7 +6,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from scripts import verify_deepseek
+from deepseek import verify as verify_deepseek
 
 
 def test_live_smoke_requires_the_server_side_secret(monkeypatch) -> None:

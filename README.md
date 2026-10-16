@@ -90,8 +90,7 @@ Pathly uses `DEEPSEEK_MODEL=deepseek-flash`. Only the Tell It Once modules (`tri
 | --- | --- |
 | `api.py` | The HTTP API the website calls |
 | `questions.py` | The paths, opportunity types, questions and districts the site shows |
-| `matcher.py` | DeepSeek analysis and grounded follow-up chat, with a no-AI fallback |
-| `deepseek_gateway.py` | Creates the server-side DeepSeek client; the browser never receives the key |
+| `deepseek/` | DeepSeek client, grounded matching/chat engine and live smoke verifier; the browser never receives the key |
 | `voice.py` | ElevenLabs text to speech and speech to text, called only from the server |
 | `safety.py` | PII redaction and fixed crisis rules, both run before the AI sees anything |
 | `directory.py` | Loads an opportunity or service list and formats it for the prompt |
