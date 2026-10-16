@@ -20,6 +20,10 @@ DEEPSEEK_BASE_URL: str = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.co
 MATCH_MODEL: str = os.getenv("MATCH_MODEL", "deepseek-flash")
 MATCH_TIMEOUT: float = float(os.getenv("MATCH_TIMEOUT", "30"))
 
+# Voice chat (ElevenLabs Agents). The key stays on the server; the browser gets a 15-minute signed URL.
+ELEVENLABS_API_KEY: str = os.getenv("ELEVENLABS_API_KEY", "")
+ELEVENLABS_AGENT_ID: str = os.getenv("ELEVENLABS_AGENT_ID", "")
+
 # Websites allowed to call the API, comma separated. Defaults cover the Vite and Create React App dev servers.
 ALLOWED_ORIGINS: list[str] = [
     o.strip() for o in os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000").split(",") if o.strip()

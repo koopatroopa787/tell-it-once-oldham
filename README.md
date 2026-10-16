@@ -11,13 +11,14 @@ pip install -r requirements.txt
 uvicorn api:app --reload
 ```
 
-The demo website in `web/` is served at http://localhost:8000/ (see `web/README.md`). Interactive docs are at http://localhost:8000/docs. Matching uses DeepSeek (`DEEPSEEK_API_KEY` and `MATCH_MODEL` in `.env`), the same provider as the chatbot. Without a key it still answers, using a simple match instead of the AI. Set `ALLOWED_ORIGINS` in `.env` to the website's address once it is deployed; the default allows the local React dev servers on ports 5173 and 3000.
+The demo website in `web/` is served at http://localhost:8000/ (see `web/README.md`). Interactive docs are at http://localhost:8000/docs. Matching uses DeepSeek (`DEEPSEEK_API_KEY` and `MATCH_MODEL` in `.env`), the same provider as the chatbot. Without a key it still answers, using a simple match instead of the AI. Set `ALLOWED_ORIGINS` in `.env` to the website's address once it is deployed; the default allows the local React dev servers on ports 5173 and 3000. Voice chat (the mic at the top of the page) uses ElevenLabs Agents: set `ELEVENLABS_API_KEY` and `ELEVENLABS_AGENT_ID`, and create the agent as described in `web/README.md`. `GET /api/voice/session` returns a short-lived signed URL; the key never reaches the browser.
 
 | Endpoint | What it does |
 | --- | --- |
 | `GET /api/health` | Returns `{"status": "ok"}` |
 | `GET /api/questions` | The two paths, three opportunity types, the questions for each path and the district list, so the site never hard-codes them |
 | `POST /api/match` | Takes `path`, `type`, `district` and the free-text answers; returns `crisis` (fixed safety information or `null`), `matches` (name, provider, area, why it fits, first step, phone, contact, link) and `used_ai` |
+| `GET /api/voice/session` | A 15-minute signed URL for the ElevenLabs voice agent (`signed_url`); 503 until the voice keys are set |
 
 Unknown fields, unknown districts and answers over 1,000 characters are rejected with a 422.
 

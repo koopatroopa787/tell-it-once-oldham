@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 
@@ -62,3 +63,22 @@ def test_crisis_information_is_shown(fake_model: FakeClient) -> None:
 )
 def test_bad_input_is_rejected(payload: dict) -> None:
     assert client.post("/api/match", json=payload).status_code == 422
+
+
+def test_voice_session_is_503_until_configured(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(api.config, "ELEVENLABS_API_KEY", "")
+    assert client.get("/api/voice/session").status_code == 503
+
+
+def test_voice_session_returns_signed_url(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(api.config, "ELEVENLABS_API_KEY", "key")
+    monkeypatch.setattr(api.config, "ELEVENLABS_AGENT_ID", "agent_1")
+    sent = {}
+
+    def fake_get(url: str, **kwargs: object) -> httpx.Response:
+        sent.update(kwargs)
+        return httpx.Response(200, json={"signed_url": "wss://signed"}, request=httpx.Request("GET", url))
+
+    monkeypatch.setattr(api.httpx, "get", fake_get)
+    assert client.get("/api/voice/session").json() == {"signed_url": "wss://signed"}
+    assert sent["headers"] == {"xi-api-key": "key"} and sent["params"] == {"agent_id": "agent_1"}

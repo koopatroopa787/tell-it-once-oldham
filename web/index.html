@@ -40,6 +40,20 @@
       </svg>
 
       <div class="container hero-inner">
+        <!-- VOICE: first thing on the page. ElevenLabs agent; matching still goes through /api/match. -->
+        <div class="voice" id="voice">
+          <button type="button" class="mic" id="mic" aria-pressed="false" aria-describedby="voice-status">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-2.08A7 7 0 0 0 19 12h-2Z"/></svg>
+            <span class="sr-only" id="mic-label">Start talking to Pathly</span>
+          </button>
+          <div class="voice-copy">
+            <strong>Talk to Pathly</strong>
+            <span id="voice-status" role="status">Tap the mic and tell us what you're into. Or <a href="#start">type instead</a>.</span>
+          </div>
+        </div>
+        <div class="chat" id="chat" aria-label="Conversation" hidden></div>
+        <p class="voice-note">Your voice is processed by ElevenLabs. Please don't say your name or address.</p>
+
         <h1 id="hero-title" class="wordmark" aria-label="Pathly">
           <span>P</span><span>A</span><span>T</span><span>H</span><span>L</span><span>Y</span>
         </h1>

@@ -8,7 +8,8 @@ from __future__ import annotations
 
 from typing import Literal, Optional
 
-from fastapi import FastAPI
+import httpx
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -92,6 +93,24 @@ def get_questions() -> dict:
         "questions": questions.QUESTIONS,
         "privacy_note": questions.PRIVACY_NOTE,
     }
+
+
+@app.get("/api/voice/session")
+def voice_session() -> dict[str, str]:
+    """A short-lived signed URL for the ElevenLabs voice agent, so the API key never reaches the browser."""
+    if not (config.ELEVENLABS_API_KEY and config.ELEVENLABS_AGENT_ID):
+        raise HTTPException(503, "Voice chat is not set up.")
+    try:
+        response = httpx.get(
+            "https://api.elevenlabs.io/v1/convai/conversation/get-signed-url",
+            params={"agent_id": config.ELEVENLABS_AGENT_ID},
+            headers={"xi-api-key": config.ELEVENLABS_API_KEY},
+            timeout=10,
+        )
+        response.raise_for_status()
+        return {"signed_url": response.json()["signed_url"]}
+    except (httpx.HTTPError, KeyError, ValueError) as exc:
+        raise HTTPException(502, "Voice chat is unavailable right now.") from exc
 
 
 @app.post("/api/match")

@@ -54,7 +54,7 @@ $('#about-form').addEventListener('submit', async (event) => {
   await loadResults();
 });
 
-async function loadResults() {
+async function loadResults() {  // returns the API reply (or null), so the voice agent can read it out
   const list = $('#results');
   const status = $('#status');
   const crisis = $('#crisis');
@@ -75,9 +75,11 @@ async function loadResults() {
       ? `${data.matches.length} options picked for you.`
       : 'Showing a simple match because the AI is not available right now.';
     if (!reduceMotion && window.gsap) gsap.from('.match', { y: 24, opacity: 0, stagger: 0.08, duration: 0.45, ease: 'power2.out' });
+    return data;
   } catch (err) {
     list.replaceChildren();
     status.textContent = 'Something went wrong loading options. Check the server is running (uvicorn api:app) and try again.';
+    return null;
   }
 }
 
@@ -143,6 +145,91 @@ function setDistrict(name) {
 window.Pathly = { setDistrict, answers };
 $$('.district-picker button').forEach((b) => b.addEventListener('click', () => setDistrict(b.dataset.district)));
 $('#district').addEventListener('change', (e) => setDistrict(e.target.value));
+
+// ---- Voice (ElevenLabs Agents; agent setup in web/README.md) --------------
+
+const ELEVENLABS_SDK = 'https://cdn.jsdelivr.net/npm/@elevenlabs/client@1.26.0/+esm';
+const DISTRICTS = [...$('#district').options].map((o) => o.value);
+const mic = $('#mic');
+const chat = $('#chat');
+let conversation = null;
+let connecting = false;
+
+function setMic(state, text) {
+  mic.className = state ? `mic is-${state}` : 'mic';
+  mic.setAttribute('aria-pressed', String(Boolean(state)));
+  $('#mic-label').textContent = state ? 'Stop talking to Pathly' : 'Start talking to Pathly';
+  if (text) $('#voice-status').textContent = text;
+}
+
+function addBubble(who, text) {
+  chat.hidden = false;
+  chat.append(el('p', `bubble ${who}`, text));
+  chat.scrollTop = chat.scrollHeight;
+}
+
+// The agent calls this client tool once it has heard enough. Same checks as the form, same /api/match guarantees.
+async function findOpportunities(params = {}) {
+  const pick = (key, allowed) => (allowed.includes(params[key]) ? params[key] : undefined);
+  Object.keys(answers).forEach((k) => delete answers[k]);
+  answers.path = pick('path', ['student', 'explore']) || 'explore';
+  answers.type = pick('type', Object.keys(TYPES)) || 'voluntary';
+  ['hobbies', 'studies', 'interests', 'experience'].forEach((k) => {
+    if (typeof params[k] === 'string' && params[k].trim()) answers[k] = params[k].trim().slice(0, 1000);
+  });
+  setDistrict(pick('district', DISTRICTS) || 'Anywhere in Oldham');
+  show('results');
+  $('#start').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' });
+  const data = await loadResults();
+  if (!data) return 'The opportunity search is not working right now. Suggest they use the form on the page instead.';
+  return {
+    crisis: data.crisis ? data.crisis.message : null,
+    matches: data.matches.map(({ name, provider, area, why, first_step }) => ({ name, provider, area, why, first_step })),
+  };
+}
+
+// The ring around the mic follows the live volume: theirs while listening, Pathly's while speaking.
+function meter() {
+  if (!conversation) { mic.style.setProperty('--level', 0); return; }
+  const speaking = mic.classList.contains('is-speaking');
+  const level = (speaking ? conversation.getOutputVolume?.() : conversation.getInputVolume?.()) || 0;
+  mic.style.setProperty('--level', Math.min(1, level * 2).toFixed(2));
+  requestAnimationFrame(meter);
+}
+
+async function startVoice() {
+  connecting = true;
+  setMic('connecting', 'Connecting...');
+  try {
+    const res = await fetch('/api/voice/session');
+    if (!res.ok) throw new Error(res.status === 503 ? 'not set up yet' : 'service unavailable');
+    const { signed_url: signedUrl } = await res.json();
+    await navigator.mediaDevices.getUserMedia({ audio: true });
+    const { Conversation } = await import(ELEVENLABS_SDK);
+    conversation = await Conversation.startSession({
+      signedUrl,
+      clientTools: { find_opportunities: findOpportunities },
+      onConnect: () => setMic('listening', "I'm listening. Tap the mic again to stop."),
+      onDisconnect: () => { conversation = null; setMic('', 'Chat ended. Tap the mic to talk again.'); },
+      onModeChange: ({ mode }) => setMic(mode === 'speaking' ? 'speaking' : 'listening'),
+      onMessage: ({ source, message }) => addBubble(source === 'user' ? 'user' : 'ai', message),
+      onError: (message) => console.warn('Voice error:', message),
+    });
+    if (!reduceMotion) requestAnimationFrame(meter);
+  } catch (err) {
+    conversation = null;
+    const reason = err.name === 'NotAllowedError' ? 'the microphone is blocked' : err.message;
+    setMic('', `Voice chat isn't available (${reason}). You can type instead, just below.`);
+  } finally {
+    connecting = false;
+  }
+}
+
+mic.addEventListener('click', () => {
+  if (connecting) return;
+  if (conversation) conversation.endSession();
+  else startVoice();
+});
 
 // ---- Motion ---------------------------------------------------------------
 
