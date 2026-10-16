@@ -20,3 +20,4 @@ graphify-out/
 
 # Front-end bundles (build with frontend/build_single_file.py)
 frontend/dist/
+data/pathly.db*

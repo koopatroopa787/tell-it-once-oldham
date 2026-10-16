@@ -10,6 +10,8 @@ const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const answers = {};
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+// A random id for this visit, so the database can group one person's answers without knowing who they are.
+const VISIT = { 'X-Pathly-Session': crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}` };
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function el(tag, className, text) {
@@ -168,7 +170,7 @@ async function loadResults() {  // returns the API reply (or null), so the voice
   try {
     const res = await fetch('/api/match', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...VISIT },
       body: JSON.stringify(Object.fromEntries(FIELDS.filter((k) => answers[k]).map((k) => [k, answers[k]]))),
     });
     if (!res.ok) throw new Error(res.status);
@@ -200,6 +202,7 @@ function showResults(data) {
       ? `${data.matches.length} options picked for you. Real Oldham services, checked on 16 October 2026; check details before you go.`
       : 'A simple match, because the AI is not available right now. Check details before you go.'));
     if (!reduceMotion && window.gsap) gsap.from(row.querySelectorAll('.match'), { y: 24, opacity: 0, stagger: 0.09, duration: 0.8, ease: 'expo.out' });
+    showJobs(line('ai wide'));
   }
   document.dispatchEvent(new CustomEvent('pathly:results', { detail: { matches: data.matches } }));
   talk.ids = data.matches.map((m) => m.id).slice(0, 5);
@@ -209,6 +212,41 @@ function showResults(data) {
     suggest(data.follow_up_questions);
   }
   log.scrollTo({ top: log.scrollHeight, behavior: reduceMotion ? 'auto' : 'smooth' });
+}
+
+// Jobs on the open market, filled into a row placed under the matches. Only a fixed keyword leaves our server.
+async function showJobs(row) {
+  let data;
+  try {
+    const res = await fetch('/api/jobs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(Object.fromEntries(FIELDS.filter((k) => answers[k]).map((k) => [k, answers[k]]))),
+    });
+    if (!res.ok) throw new Error(res.status);
+    data = await res.json();
+  } catch (err) {
+    row.remove();
+    return;
+  }
+  const box = el('div', 'jobs');
+  box.append(el('p', 'eyebrow', data.live ? 'Jobs going near Oldham right now' : 'Jobs on the market'));
+  data.jobs.forEach((j) => {
+    const a = el('a', 'job');
+    a.href = j.url; a.target = '_blank'; a.rel = 'noopener noreferrer';
+    a.append(el('strong', null, j.title), el('span', null, [j.company, j.area].filter(Boolean).join(', ')));
+    if (j.salary) a.append(el('span', 'job-pay', j.salary));
+    box.append(a);
+  });
+  const links = el('p', 'job-links', data.live ? 'More on ' : `Search "${data.keyword}" jobs in Oldham on `);
+  data.search_links.forEach((l, i) => {
+    const a = el('a', null, l.site);
+    a.href = l.url; a.target = '_blank'; a.rel = 'noopener noreferrer';
+    links.append(a, i < data.search_links.length - 1 ? ', ' : '.');
+  });
+  box.append(links);
+  row.append(box);
+  if (!reduceMotion && window.gsap) gsap.from(box.children, { y: 16, opacity: 0, stagger: 0.06, duration: 0.7, ease: 'expo.out' });
 }
 
 function suggest(questions) {
@@ -227,7 +265,7 @@ async function chat(text) {
   try {
     const res = await fetch('/api/chat', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...VISIT },
       body: JSON.stringify({
         answers: Object.fromEntries(FIELDS.filter((k) => answers[k]).map((k) => [k, answers[k]])),
         matched_opportunity_ids: talk.ids, history: talk.history.slice(-8), message: text,
@@ -292,14 +330,14 @@ fileInput.addEventListener('change', async () => {
   log.append(dots);
   log.scrollTop = log.scrollHeight;
   try {
-    const res = await fetch('/api/read-doc', { method: 'POST', headers: { 'Content-Type': DOC_TYPES[ext] }, body: file });
+    const res = await fetch('/api/read-doc', { method: 'POST', headers: { 'Content-Type': DOC_TYPES[ext], ...VISIT }, body: file });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.detail || "I couldn't read that file.");
     dots.remove();
     const answerField = !talk.done && talk.q && keyOf(talk.q) === 'studies' ? 'studies' : 'experience';
     answers[answerField] = [answers[answerField], data.text].filter(Boolean).join('\n').slice(0, 1000);
     const removed = data.removed.length ? ` I took out your ${listOf(data.removed)} first.` : '';
-    line('ai', `Got it, I've read it.${removed} Nothing is saved, it's only used for this chat.`);
+    line('ai', `Got it, I've read it.${removed} It's saved on our own server with those details removed.`);
     read = true;
   } catch (err) {
     dots.remove();

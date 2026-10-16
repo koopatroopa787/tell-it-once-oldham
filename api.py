@@ -17,6 +17,8 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 import config
 import documents
+import jobs
+from db import Database, session_id
 import questions
 from deepseek.matcher import Matcher
 from directory import Directory
@@ -30,10 +32,20 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=config.ALLOWED_ORIGINS,
     allow_methods=["GET", "POST"],
-    allow_headers=["Content-Type"],
+    allow_headers=["Content-Type", "X-Pathly-Session"],
 )
 
 matcher = Matcher(Directory.load(config.OPPORTUNITIES_PATH, config.BOROUGH))
+db = Database()
+
+
+def _visit(request: Request) -> str | None:
+    return session_id(request.headers.get("x-pathly-session"))
+
+
+def _clean(answers: dict) -> dict:
+    """Answers as they are stored: every string through the PII redactor."""
+    return {k: redact_pii(v)[0] if isinstance(v, str) else v for k, v in answers.items()}
 
 
 class MatchRequest(BaseModel):
@@ -155,7 +167,7 @@ def voice_session() -> dict[str, str]:
 
 
 @app.post("/api/match")
-def match(request: MatchRequest) -> MatchResponse:
+def match(request: MatchRequest, http: Request) -> MatchResponse:
     """Match answers to verified opportunities. Never fails: falls back to a simple match without the AI."""
     answers = request.model_dump(exclude_none=True)
 
@@ -182,7 +194,7 @@ def match(request: MatchRequest) -> MatchResponse:
                 link=opp.get("link") or "",
             )
         )
-    return MatchResponse(
+    response = MatchResponse(
         crisis=crisis,
         summary="" if crisis else result.summary,  # on a crisis the matcher's summary repeats the crisis message
         strengths=result.strengths,
@@ -192,6 +204,15 @@ def match(request: MatchRequest) -> MatchResponse:
         confidence=result.confidence,
         used_ai=result.used_ai,
     )
+    db.save("matches", _visit(http), answers=_clean(answers), crisis=found.label if found else None,
+            used_ai=int(result.used_ai), result=response.model_dump(exclude={"crisis"}))
+    return response
+
+
+@app.post("/api/jobs")
+def market_jobs(request: MatchRequest) -> dict:
+    """Live jobs near Oldham (Adzuna, when keys are set) plus job-site searches. Only a fixed keyword leaves the server."""
+    return jobs.find(request.interests or request.hobbies, request.experience or request.studies)
 
 
 chat_limiter = RateLimiter(config.CHAT_LIMIT_PER_10_MIN, 600)
@@ -208,6 +229,7 @@ def chat(body: ChatRequest, request: Request) -> ChatResponse:
         history=[turn.model_dump() for turn in body.history],
         message=body.message,
     )
+    db.save("chats", _visit(request), message=redact_pii(body.message)[0], reply=result.reply, used_ai=int(result.used_ai))
     return ChatResponse(
         reply=result.reply,
         referenced_opportunity_ids=result.referenced_opportunity_ids,
@@ -301,7 +323,9 @@ async def read_doc(request: Request) -> DocumentText:
     except documents.UnreadableDocument as exc:
         raise HTTPException(422, str(exc)) from exc
     labels = {**PII_LABELS, "LINK": "web link"}
-    return DocumentText(text=text[:TEXT_LIMIT], removed=[labels.get(tag, tag) for tag in removed])
+    removed = [labels.get(tag, tag) for tag in removed]
+    db.save("documents", _visit(request), kind=content_type, text=text, removed=removed)
+    return DocumentText(text=text[:TEXT_LIMIT], removed=removed)
 
 
 # The plain HTML front ends: Akshita's Oldham map at /map, web/ at /. Mounted last so /api routes win.

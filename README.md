@@ -24,7 +24,8 @@ The demo website in `web/` is served at http://localhost:8000/ (see `web/README.
 | `POST /api/chat` | Ask Pathly: `{answers, matched_opportunity_ids, history, message}`; answers only about the matches shown, with crisis messages bypassing the AI. 30 questions per visitor per 10 minutes |
 | `GET /api/voice` | `{"enabled": true}` when an ElevenLabs key is set, so the site shows the Listen and Speak buttons |
 | `POST /api/speak` | `{text}` (up to 800 characters) to MP3 audio through ElevenLabs |
-| `POST /api/read-doc` | A CV or document as the raw body (`application/pdf`, Word `.docx` or `text/plain`, up to 5 MB) to `{text, removed}`. Read in memory and never saved; the name line, emails, phone numbers, links and other personal details are removed |
+| `POST /api/jobs` | The same answers as `/api/match` to `{keyword, live, jobs, search_links}`: up to 5 live jobs near Oldham from Adzuna when `ADZUNA_APP_ID` and `ADZUNA_APP_KEY` are set (free at developer.adzuna.com), plus GOV.UK Find a job, Indeed and Reed searches. Only a keyword from a fixed list leaves the server |
+| `POST /api/read-doc` | A CV or document as the raw body (`application/pdf`, Word `.docx` or `text/plain`, up to 5 MB) to `{text, removed}`. The cleaned text is saved in the local database; the name line, emails, phone numbers, links and other personal details are removed |
 | `POST /api/transcribe` | Raw audio in the body (for example `audio/webm` from the browser) to `{text, removed}`, with personal details removed. Voice calls are limited per visitor to protect credits |
 | `GET /api/voice/session` | A 15-minute signed URL for the ElevenLabs voice agent (`signed_url`); 503 until the voice keys are set |
 
@@ -93,6 +94,9 @@ Pathly uses `DEEPSEEK_MODEL=deepseek-flash`. Only the Tell It Once modules (`tri
 | `questions.py` | The paths, opportunity types, questions and districts the site shows |
 | `deepseek/` | DeepSeek client, grounded matching/chat engine and live smoke verifier; the browser never receives the key |
 | `voice.py` | ElevenLabs text to speech and speech to text, called only from the server |
+| `db.py` | Local SQLite database (`data/pathly.db`, not in git) of every match, chat turn and uploaded CV, all redacted first. `python db.py` shows the counts and latest rows |
+| `jobs.py` | Market jobs after the matches (Adzuna, with job-site searches as the fallback) |
+| `documents.py` | Reads uploaded PDF, Word and text CVs |
 | `safety.py` | PII redaction and fixed crisis rules, both run before the AI sees anything |
 | `directory.py` | Loads an opportunity or service list and formats it for the prompt |
 | `data/` | 16 real Oldham opportunities (`opportunities.json`, checked 16 Oct 2026), plus the Tell It Once sample services and personas |
@@ -102,6 +106,7 @@ Pathly uses `DEEPSEEK_MODEL=deepseek-flash`. Only the Tell It Once modules (`tri
 - Phone numbers, emails, postcodes, NI numbers and long account numbers are stripped before anything reaches the AI.
 - Fixed, human-written safety information is returned for risk to life, danger, homelessness tonight or no food. It does not depend on the AI, and it still appears if the AI service is down.
 - The model can only recommend opportunities in the list. Anything else it suggests is removed.
+- Everything stored goes into a SQLite file on our own server (`data/pathly.db`), never a hosted database, and only after redaction. Rows carry a random per-visit id, not a name. There is no public endpoint that reads it back.
 - The model never decides eligibility. Wording is always "you could" or "you may be able to".
 
 **Known limits.** The safety keyword rules are English only. The opportunity list was gathered from each organisation's own page on 16 Oct 2026 (see each entry's `source`); re-check contact details and times before real use.

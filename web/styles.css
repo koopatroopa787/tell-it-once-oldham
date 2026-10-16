@@ -214,6 +214,15 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 /* AI summary, directions and tips */
 .summary { font: 400 italic 22px/1.4 var(--serif); margin: 6px 0 18px; max-width: 720px; }
+.jobs { display: grid; gap: 8px; margin: 4px 0 8px; }
+.jobs .eyebrow { margin: 0 0 2px; }
+.job { display: grid; gap: 2px; padding: 14px 18px; background: #fff; border: 1px solid var(--line); border-radius: 16px; color: var(--ink); text-decoration: none; transition: border-color .3s var(--ease), transform .3s var(--ease); }
+.job:hover, .job:focus-visible { border-color: var(--orange); transform: translateY(-2px); }
+.job strong { font: 700 17px/1.2 var(--display); letter-spacing: -.01em; }
+.job span { font-size: 14px; color: var(--muted); }
+.job .job-pay { font: 500 12px/1.4 var(--mono); color: var(--orange-ink); }
+.job-links { font-size: 14px; color: var(--muted); margin: 2px 2px 0; }
+.job-links a { color: var(--ink); text-underline-offset: 3px; }
 .directions { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 20px; }
 .directions .eyebrow { grid-column: 1 / -1; margin: 0 0 4px; }
 .direction { border-top: 2px solid var(--orange); padding: 12px 2px; display: grid; gap: 4px; }
