@@ -40,8 +40,9 @@ const QUESTIONS = [
       { value: 'student', label: "I'm studying", desc: 'School, college, sixth form or uni' },
       { value: 'explore', label: "I'm exploring my options", desc: "Not studying right now, or working out what's next" },
     ],
-    read: (t) => (has(/stud|school|college|uni\b|universit|sixth|gcse|a.?level|btec|t.?level|course|year \d/)(t) ? 'student'
-      : has(/explor|not stud|left|finish|leav|work|job|nothing|neet|options|next/)(t) ? 'explore' : null),
+    // Explore first, so "not at school" or "left college" isn't read as studying.
+    read: (t) => (has(/explor|\bnot\b|\b(don|didn|aren|isn|haven|ain|can)'?t\b|\bno\b|left|finish|leav|dropped|nothing|neet|options|next|figur/)(t) ? 'explore'
+      : has(/stud|school|college|uni\b|universit|sixth|gcse|a.?level|btec|t.?level|course|year \d/)(t) ? 'student' : null),
   },
   {
     key: 'type', step: 'What you want', title: 'What are you after?',
