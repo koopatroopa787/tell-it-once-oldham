@@ -8,11 +8,15 @@ crisis messages remain available when the API is missing or unavailable.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import json
 import re
 from typing import Any
+from urllib.parse import urlparse
+
+import httpx
 
 import config
-from deepseek_gateway import create_deepseek_client
+from deepseek_gateway import DeepSeekUnavailable, create_deepseek_client
 from directory import Directory
 from safety import check_crisis, redact_pii
 
@@ -140,6 +144,36 @@ def _model_text(value: Any, limit: int) -> str:
     return URL_PATTERN.sub("[LINK REMOVED]", redacted)
 
 
+def _is_anthropic_endpoint(url: str) -> bool:
+    return urlparse(url).path.rstrip("/").endswith("/anthropic")
+
+
+def _call_openai_tool(model: str, *, system: str, tool: dict, messages: list[dict], max_tokens: int) -> dict:
+    """The same forced tool call through an OpenAI-compatible endpoint, such as the LiteLLM proxy on the demo server."""
+    if not config.DEEPSEEK_API_KEY:
+        raise DeepSeekUnavailable("DEEPSEEK_API_KEY is not configured.")
+    function = {"name": tool["name"], "description": tool["description"], "parameters": tool["input_schema"]}
+    response = httpx.post(
+        f"{config.DEEPSEEK_BASE_URL.rstrip('/')}/chat/completions",
+        headers={"Authorization": f"Bearer {config.DEEPSEEK_API_KEY}"},
+        json={
+            "model": model,
+            "max_tokens": max_tokens,
+            "messages": [{"role": "system", "content": system}, *messages],
+            "tools": [{"type": "function", "function": function}],
+            "tool_choice": {"type": "function", "function": {"name": tool["name"]}},
+            "thinking": {"type": "disabled"},  # DeepSeek rejects a forced tool call in thinking mode
+            "extra_body": {"thinking": {"type": "disabled"}},  # the same, for a LiteLLM proxy (it drops the line above)
+        },
+        timeout=config.DEEPSEEK_TIMEOUT_SECONDS,
+    )
+    response.raise_for_status()
+    for call in response.json()["choices"][0]["message"].get("tool_calls") or []:
+        if call["function"]["name"] == tool["name"]:
+            return json.loads(call["function"]["arguments"])
+    raise RuntimeError("DeepSeek did not return the required structured result.")
+
+
 class Matcher:
     """Analyse questionnaire answers and power a directory-grounded chat."""
 
@@ -231,6 +265,8 @@ DISPLAYED OPPORTUNITIES:
         return self._call_tool(system=system, tool=CHAT_TOOL, messages=messages, max_tokens=700)
 
     def _call_tool(self, *, system: str, tool: dict, messages: list[dict], max_tokens: int) -> dict:
+        if self._client is None and not _is_anthropic_endpoint(config.DEEPSEEK_BASE_URL):
+            return _call_openai_tool(self.model, system=system, tool=tool, messages=messages, max_tokens=max_tokens)
         response = self.client.messages.create(
             model=self.model,
             max_tokens=max_tokens,

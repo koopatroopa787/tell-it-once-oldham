@@ -134,3 +134,37 @@ def test_every_opportunity_has_a_way_to_get_in_touch() -> None:
     for opp in _directory().services:
         assert opp["link"] or opp["phone"] or opp["contact"], opp["id"]
         assert opp["category"] in {"voluntary", "paid_work", "social_work"}, opp["id"]
+
+
+def test_proxy_base_url_uses_the_openai_compatible_route(monkeypatch) -> None:
+    """The demo server reaches DeepSeek through a LiteLLM proxy; that route must keep working."""
+    import json as _json
+
+    import httpx
+
+    import matcher as matcher_module
+
+    monkeypatch.setattr(config, "DEEPSEEK_BASE_URL", "http://127.0.0.1:4000")
+    monkeypatch.setattr(config, "DEEPSEEK_API_KEY", "test-key")
+    sent: dict = {}
+
+    def fake_post(url: str, **kwargs):
+        sent["url"], sent["json"], sent["headers"] = url, kwargs["json"], kwargs["headers"]
+        arguments = _json.dumps(_analysis([{"opportunity_id": "vol-dofe", "why": "w", "first_step": "s", "barrier_tip": "t"}]))
+        body = {"choices": [{"message": {"tool_calls": [{"function": {"name": "suggest_pathly_options", "arguments": arguments}}]}}]}
+        return httpx.Response(200, json=body, request=httpx.Request("POST", url))
+
+    monkeypatch.setattr(matcher_module.httpx, "post", fake_post)
+    result = Matcher(_directory()).run({"path": "student", "type": "voluntary", "hobbies": "call 07700 900123"})
+    assert result.used_ai and [m["opportunity_id"] for m in result.matches] == ["vol-dofe"]
+    assert sent["url"] == "http://127.0.0.1:4000/chat/completions"
+    assert sent["json"]["extra_body"] == {"thinking": {"type": "disabled"}}
+    assert sent["json"]["messages"][0]["role"] == "system"
+    assert "07700" not in str(sent["json"]["messages"])
+
+
+def test_official_endpoint_without_a_key_falls_back(monkeypatch) -> None:
+    monkeypatch.setattr(config, "DEEPSEEK_BASE_URL", "https://api.deepseek.com/anthropic")
+    monkeypatch.setattr(config, "DEEPSEEK_API_KEY", "")
+    result = Matcher(_directory()).run({"path": "student", "type": "paid_work"})
+    assert result.matches and not result.used_ai

@@ -4,6 +4,8 @@ Pathly helps young people in Oldham find their next step: volunteering, paid wor
 
 Pathly will be a live website with a React front end (design still to be decided). The Python side is an HTTP API in `api.py` that the site calls.
 
+**Live demo:** https://kaakserver.tail042e87.ts.net/ (home page and voice chat) and https://kaakserver.tail042e87.ts.net/map/ (the Oldham map).
+
 ### Run the API
 
 ```bash
@@ -12,7 +14,7 @@ cp .env.example .env                 # then paste your DeepSeek and ElevenLabs k
 uvicorn api:app --reload
 ```
 
-The demo website in `web/` is served at http://localhost:8000/ (see `web/README.md`). Interactive docs are at http://localhost:8000/docs. Matching and the "Ask Pathly" chat use DeepSeek (`DEEPSEEK_API_KEY` and `DEEPSEEK_MODEL` in `.env`). Voice uses ElevenLabs (`ELEVENLABS_API_KEY`). Without keys it still answers, using a simple match instead of the AI, and the site is text only. Set `ALLOWED_ORIGINS` in `.env` to the website's address once it is deployed; the default allows the local React dev servers on ports 5173 and 3000.
+The demo website in `web/` is served at http://localhost:8000/ (see `web/README.md`). Interactive docs are at http://localhost:8000/docs. Matching and the "Ask Pathly" chat use DeepSeek (`DEEPSEEK_API_KEY` and `DEEPSEEK_MODEL` in `.env`). Voice uses ElevenLabs (`ELEVENLABS_API_KEY`). Without keys it still answers, using a simple match instead of the AI, and the site is text only. Set `ALLOWED_ORIGINS` in `.env` to the website's address once it is deployed; the default allows the local React dev servers on ports 5173 and 3000. Voice chat (the mic at the top of the page) uses ElevenLabs Agents: set `ELEVENLABS_API_KEY` and `ELEVENLABS_AGENT_ID`, and create the agent as described in `web/README.md`. `GET /api/voice/session` returns a short-lived signed URL; the key never reaches the browser.
 
 | Endpoint | What it does |
 | --- | --- |
@@ -23,6 +25,7 @@ The demo website in `web/` is served at http://localhost:8000/ (see `web/README.
 | `GET /api/voice` | `{"enabled": true}` when an ElevenLabs key is set, so the site shows the Listen and Speak buttons |
 | `POST /api/speak` | `{text}` (up to 800 characters) to MP3 audio through ElevenLabs |
 | `POST /api/transcribe` | Raw audio in the body (for example `audio/webm` from the browser) to `{text, removed}`, with personal details removed. Voice calls are limited per visitor to protect credits |
+| `GET /api/voice/session` | A 15-minute signed URL for the ElevenLabs voice agent (`signed_url`); 503 until the voice keys are set |
 
 Unknown fields, unknown districts and answers over 1,000 characters are rejected with a 422.
 

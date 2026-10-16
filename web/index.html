@@ -9,12 +9,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=DM+Sans:opsz,wght@9..40,400;9..40,600&family=Kode+Mono:wght@400;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/explore/vendor/leaflet.css">
+  <link rel="stylesheet" href="/map/vendor/leaflet.css">
   <link rel="stylesheet" href="./styles.css">
   <script defer src="./vendor/gsap.min.js"></script>
   <script defer src="./vendor/ScrollTrigger.min.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
-  <script defer src="/explore/data/oldham-map.js"></script>
+  <script defer src="/map/data/oldham-map.js"></script>
   <script defer src="./app.js"></script>
   <script defer src="./map.js"></script>
 </head>
@@ -44,6 +44,20 @@
       </svg>
 
       <div class="container hero-inner">
+        <!-- VOICE: first thing on the page. ElevenLabs agent; matching still goes through /api/match. -->
+        <div class="voice" id="voice">
+          <button type="button" class="mic" id="mic" aria-pressed="false" aria-describedby="voice-status">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-2.08A7 7 0 0 0 19 12h-2Z"/></svg>
+            <span class="sr-only" id="mic-label">Start talking to Pathly</span>
+          </button>
+          <div class="voice-copy">
+            <strong>Talk to Pathly</strong>
+            <span id="voice-status" role="status">Tap the mic and tell us what you're into. Or <a href="#start">type instead</a>.</span>
+          </div>
+        </div>
+        <div class="chat" id="chat" aria-label="Conversation" hidden></div>
+        <p class="voice-note">Your voice is processed by ElevenLabs. Please don't say your name or address.</p>
+
         <h1 id="hero-title" class="wordmark" aria-label="Pathly">
           <span>P</span><span>A</span><span>T</span><span>H</span><span>L</span><span>Y</span>
         </h1>
@@ -162,7 +176,7 @@
           <p class="lead">Choose an area and we'll put the closest options first.</p>
           <p class="map-picked" id="map-picked" role="status">Showing: Anywhere in Oldham</p>
           <p class="hint">Dots are places from Oldham Council's directory for what you're looking for. Your matches show as numbered pins.</p>
-          <a class="back" href="/explore/">Open the full Oldham map &rarr;</a>
+          <a class="btn btn-ink" href="/map/">Open the full Oldham map <span aria-hidden="true">&rarr;</span></a>
         </div>
         <div id="oldham-map" class="map-slot">
           <div class="district-picker" role="group" aria-label="Choose a district">

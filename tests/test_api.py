@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 
@@ -101,3 +102,28 @@ def test_chat_is_rate_limited(fake_model: FakeClient, monkeypatch: pytest.Monkey
     monkeypatch.setattr(api, "chat_limiter", RateLimiter(1, 600))
     body = {"answers": {"path": "student", "type": "voluntary"}, "matched_opportunity_ids": ["vol-dofe"], "message": "hi"}
     assert [client.post("/api/chat", json=body).status_code for _ in range(2)] == [200, 429]
+
+
+def test_voice_session_is_503_until_configured(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(api.config, "ELEVENLABS_API_KEY", "")
+    assert client.get("/api/voice/session").status_code == 503
+
+
+def test_voice_session_returns_signed_url(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(api.config, "ELEVENLABS_API_KEY", "key")
+    monkeypatch.setattr(api.config, "ELEVENLABS_AGENT_ID", "agent_1")
+    sent = {}
+
+    def fake_get(url: str, **kwargs: object) -> httpx.Response:
+        sent.update(kwargs)
+        return httpx.Response(200, json={"signed_url": "wss://signed"}, request=httpx.Request("GET", url))
+
+    monkeypatch.setattr(api.httpx, "get", fake_get)
+    assert client.get("/api/voice/session").json() == {"signed_url": "wss://signed"}
+    assert sent["headers"] == {"xi-api-key": "key"} and sent["params"] == {"agent_id": "agent_1"}
+
+
+def test_both_front_ends_are_served() -> None:
+    assert "Talk to Pathly" in client.get("/").text
+    assert "config.js" in client.get("/map/").text
+    assert client.get("/map/data/oldham-map.js").status_code == 200

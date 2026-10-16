@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from typing import Literal, Optional
 
+import httpx
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -131,6 +132,24 @@ def get_questions() -> dict:
         "questions": questions.QUESTIONS,
         "privacy_note": questions.PRIVACY_NOTE,
     }
+
+
+@app.get("/api/voice/session")
+def voice_session() -> dict[str, str]:
+    """A short-lived signed URL for the ElevenLabs voice agent, so the API key never reaches the browser."""
+    if not (config.ELEVENLABS_API_KEY and config.ELEVENLABS_AGENT_ID):
+        raise HTTPException(503, "Voice chat is not set up.")
+    try:
+        response = httpx.get(
+            "https://api.elevenlabs.io/v1/convai/conversation/get-signed-url",
+            params={"agent_id": config.ELEVENLABS_AGENT_ID},
+            headers={"xi-api-key": config.ELEVENLABS_API_KEY},
+            timeout=10,
+        )
+        response.raise_for_status()
+        return {"signed_url": response.json()["signed_url"]}
+    except (httpx.HTTPError, KeyError, ValueError) as exc:
+        raise HTTPException(502, "Voice chat is unavailable right now.") from exc
 
 
 @app.post("/api/match")
@@ -259,8 +278,6 @@ async def transcribe(request: Request) -> Transcript:
     return Transcript(text=clean[:TEXT_LIMIT], removed=[PII_LABELS.get(tag, tag) for tag in removed])
 
 
-# Akshita's full Oldham map app (frontend/). The orange site also loads its map data and Leaflet styles from here.
-app.mount("/explore", StaticFiles(directory=config.ROOT / "frontend", html=True), name="explore")
-
-# The plain HTML front end in web/ (until the React site exists). Mounted last so /api routes win.
+# The plain HTML front ends: Akshita's Oldham map at /map, web/ at /. Mounted last so /api routes win.
+app.mount("/map", StaticFiles(directory=config.ROOT / "frontend", html=True), name="map")
 app.mount("/", StaticFiles(directory=config.ROOT / "web", html=True), name="web")

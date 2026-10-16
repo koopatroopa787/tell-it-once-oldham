@@ -1,5 +1,5 @@
 // Pathly: the Oldham map inside the orange site. Uses Akshita's map data (frontend/data/oldham-map.js, served at
-// /explore/data/) and the contract in web/README.md: picking an area calls Pathly.setDistrict(), and the map follows
+// /map/data/) and the contract in web/README.md: picking an area calls Pathly.setDistrict(), and the map follows
 // 'pathly:district' (picks made in the form) and 'pathly:results' (numbered pins for the matches).
 (() => {
   const D = window.OLDHAM;
