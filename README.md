@@ -16,7 +16,7 @@ Built for the Green Circles Manchester "Build for Greater Manchester" hackathon,
 python -m venv .venv
 source .venv/bin/activate            # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-cp .env.example .env                 # then paste your Anthropic API key and set BOROUGH
+cp .env.example .env                 # then paste your DeepSeek API key and set BOROUGH
 streamlit run app.py
 ```
 
@@ -33,7 +33,7 @@ Run the offline tests with `pip install pytest && pytest`. They need no API key.
 5. **Run the bias check** with `python eval_bias.py`. It writes `data/bias_report.md`, a table you can put on the responsible-design slide.
 6. **Clear demo cases** from the sidebar ("Demo controls") so the judges see a clean queue.
 
-If responses feel slow, set `ANTHROPIC_MODEL=claude-haiku-5-5` in `.env`.
+Pathly uses `DEEPSEEK_MODEL=deepseek-flash`. The older `connector_app.py` still uses Anthropic.
 
 ## What is in here
 
@@ -41,7 +41,8 @@ If responses feel slow, set `ANTHROPIC_MODEL=claude-haiku-5-5` in `.env`.
 | --- | --- |
 | `app.py` | The young people's app: routes between the pages in `flow/` |
 | `flow/` | One module per page: path, opportunity type, questions, results |
-| `matcher.py` | Matches answers to `data/opportunities.json`, with a no-AI fallback |
+| `matcher.py` | DeepSeek analysis and grounded follow-up chat, with a no-AI fallback |
+| `deepseek_gateway.py` | Creates the server-side DeepSeek client; the browser never receives the key |
 | `connector_app.py` | The earlier connector-facing app: Conversation, Handovers, Neighbourhood insights and About views |
 | `triage.py` | Prompt, structured tool call, validation against the directory, offline cache |
 | `safety.py` | PII redaction and fixed crisis rules, both run before the AI sees anything |

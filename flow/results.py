@@ -17,7 +17,8 @@ def get_matcher() -> Matcher:
 
 
 def _start_again() -> None:
-    st.session_state.answers = {}
+    for key in ("answers", "result", "result_key", "pathly_chat_history"):
+        st.session_state.pop(key, None)
     go("path")
 
 
@@ -29,13 +30,25 @@ def render() -> None:
     crisis = check_crisis(" ".join(str(v) for v in given.values()))
     if crisis:
         st.error(crisis.message.replace("{borough}", config.BOROUGH))
+        back_button("type")
+        st.button("Start again", on_click=_start_again)
+        return
 
     key = repr(sorted(given.items()))
     if st.session_state.get("result_key") != key:  # one AI call per set of answers, not per rerun
         with st.spinner("Finding options near you..."):
             st.session_state.result = get_matcher().run(given)
         st.session_state.result_key = key
+        st.session_state.pathly_chat_history = []
     result = st.session_state.result
+
+    if result.summary:
+        st.text(result.summary)
+
+    if result.possible_directions:
+        st.subheader("Directions you could explore")
+        for direction in result.possible_directions:
+            st.text(f"{direction['title']} — {direction['why']}")
 
     directory = get_matcher().directory
     for match in result.matches:
@@ -43,9 +56,9 @@ def render() -> None:
         with st.container(border=True):
             st.subheader(opp["name"])
             st.caption(f"{opp['provider']} | {opp.get('area', '')}")
-            st.write(match["why"])
+            st.text(match["why"])
             if match.get("first_step"):
-                st.markdown(f"**First step:** {match['first_step']}")
+                st.text(f"First step: {match['first_step']}")
             if opp.get("phone"):
                 st.markdown(f"**Phone:** {opp['phone']}")
             if opp.get("contact"):
@@ -55,6 +68,34 @@ def render() -> None:
 
     if not result.used_ai:
         st.caption("Showing a simple match because the AI service is not available right now.")
+
+    st.subheader("Ask Pathly")
+    st.caption("Ask about the options above. Do not include your name, address, phone number or email.")
+    history = st.session_state.setdefault("pathly_chat_history", [])
+    for item in history:
+        with st.chat_message(item["role"]):
+            st.text(item["content"])
+
+    question = st.chat_input("What jobs could suit me, or what should I do first?")
+    if question:
+        matched_ids = [match["opportunity_id"] for match in result.matches]
+        with st.spinner("Thinking about your options..."):
+            reply = get_matcher().chat(
+                answers=given,
+                matched_opportunity_ids=matched_ids,
+                history=history,
+                message=question,
+            )
+        reply_text = reply.reply
+        if reply.needs_human_support:
+            reply_text += " Please talk this through with a trusted adult or local adviser today."
+        st.session_state.pathly_chat_history = [
+            *history,
+            {"role": "user", "content": question},
+            {"role": "assistant", "content": reply_text},
+        ]
+        st.rerun()
+
     st.caption("Sample data for a demo. Check details with the organisation before you go.")
     back_button("type")
     st.button("Start again", on_click=_start_again)

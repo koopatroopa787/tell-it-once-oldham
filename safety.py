@@ -20,6 +20,10 @@ PII_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ("NI_NUMBER", re.compile(r"\b[A-CEGHJ-PR-TW-Z]{2}\s?\d{2}\s?\d{2}\s?\d{2}\s?[A-D]\b", re.IGNORECASE)),
     ("PHONE", re.compile(r"(?:\+44\s?|\b0)(?:\d[\s-]?){9,10}\b")),
     ("POSTCODE", re.compile(r"\b[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}\b", re.IGNORECASE)),
+    ("DATE_OF_BIRTH", re.compile(r"\b(?:date of birth|dob|born on)\s*[:\-]?\s*\d{1,2}[/.\-]\d{1,2}[/.\-]\d{2,4}\b", re.IGNORECASE)),
+    ("NAME", re.compile(r"\b(?:my name is|i am called|i'm called)\s+[A-Z][A-Za-z'\-]+(?:\s+[A-Z][A-Za-z'\-]+){0,2}\b", re.IGNORECASE)),
+    ("SCHOOL", re.compile(r"\b(?:i (?:go to|attend|study at)|my school is)\s+[A-Z][A-Za-z'&\- ]{1,50}(?:school|college|academy)\b", re.IGNORECASE)),
+    ("STREET_ADDRESS", re.compile(r"\b\d{1,4}\s+[A-Z][A-Za-z'\- ]{1,40}\s(?:street|road|avenue|lane|drive|close|way|court|place|terrace)\b", re.IGNORECASE)),
     ("LONG_NUMBER", re.compile(r"\b\d{8,}\b")),
 ]
 
@@ -28,6 +32,10 @@ PII_LABELS = {
     "NI_NUMBER": "National Insurance number",
     "PHONE": "phone number",
     "POSTCODE": "postcode",
+    "DATE_OF_BIRTH": "date of birth",
+    "NAME": "name",
+    "SCHOOL": "school or college",
+    "STREET_ADDRESS": "street address",
     "LONG_NUMBER": "account or reference number",
 }
 
@@ -85,9 +93,9 @@ _CRISIS_RULES: list[tuple[str, int, list[str], str]] = [
             r"\bsleeping (?:rough|on the streets?)\b",
             r"\b(?:homeless|kicked out|evicted) (?:tonight|today)\b",
         ],
-        "If you have nowhere safe to sleep tonight, contact {borough} Council's homelessness team now. "
-        "Out of hours, use the council's emergency line (add the real number before the demo). "
-        "Shelter's free helpline is 0808 800 4444.",
+        "If you have nowhere safe to sleep tonight, call Oldham Housing Options on 0161 770 4605 now. "
+        "Out of hours, call Oldham's homelessness line on 0800 988 7061. "
+        "If you are under 18 and sleeping rough, call police on 101, or 999 if you are in immediate danger.",
     ),
     (
         "No food",

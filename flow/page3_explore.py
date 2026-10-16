@@ -16,7 +16,7 @@ def render() -> None:
             value=answers().get("experience", ""),
         )
         district = st.selectbox("Where in Oldham are you?", DISTRICTS)
-        st.caption("Please don't include your name, address or phone number.")
+        st.caption("Please don't include your name, full address, phone, email, date of birth or school name.")
         if st.form_submit_button("Show me options", type="primary"):
             answers().update(interests=interests, experience=experience, district=district)
             go("results")

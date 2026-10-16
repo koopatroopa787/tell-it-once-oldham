@@ -13,7 +13,7 @@ def render() -> None:
         hobbies = st.text_area("What do you enjoy doing in your free time?", value=answers().get("hobbies", ""))
         studies = st.text_input("What are you studying at the moment?", value=answers().get("studies", ""))
         district = st.selectbox("Where in Oldham are you?", DISTRICTS)
-        st.caption("Please don't include your name, address or phone number.")
+        st.caption("Please don't include your name, full address, phone, email, date of birth or school name.")
         if st.form_submit_button("Show me options", type="primary"):
             answers().update(hobbies=hobbies, studies=studies, district=district)
             go("results")

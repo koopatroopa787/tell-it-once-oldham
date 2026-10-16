@@ -23,5 +23,13 @@ PAGES = {
 
 st.session_state.setdefault("step", "path")
 st.sidebar.title("Pathly")
-st.sidebar.button("Start again", on_click=lambda: (st.session_state.update(answers={}), go("path")))
+
+
+def _start_again() -> None:
+    for key in ("answers", "result", "result_key", "pathly_chat_history"):
+        st.session_state.pop(key, None)
+    go("path")
+
+
+st.sidebar.button("Start again", on_click=_start_again)
 PAGES[st.session_state.step]()

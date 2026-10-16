@@ -1,11 +1,14 @@
 # Secrets
-.env
+.env*
+!.env.example
 
 # Python
 __pycache__/
 *.pyc
 .venv/
 .pytest_cache/
+.coverage
+htmlcov/
 
 # Runtime data (demo cases and cached model responses are per machine)
 data/enquiries.json
