@@ -38,6 +38,7 @@ def test_live_smoke_exercises_matching_and_chat(monkeypatch, capsys) -> None:
             return SimpleNamespace(reply=raw["reply"])
 
     monkeypatch.setattr(verify_deepseek.config, "DEEPSEEK_API_KEY", "test-secret")
+    monkeypatch.setattr(verify_deepseek, "_check_official_endpoint", lambda: None)
     monkeypatch.setattr(verify_deepseek.Directory, "load", lambda *_args: object())
     monkeypatch.setattr(verify_deepseek, "Matcher", FakeMatcher)
 
@@ -58,3 +59,14 @@ def test_live_smoke_reports_only_safe_api_failure_details(capsys) -> None:
     annotation = capsys.readouterr().out
     assert annotation.startswith("::error title=DeepSeek integration check::")
     assert "response body" not in annotation
+
+
+def test_error_kinds_reports_types_without_messages() -> None:
+    inner = OSError("sensitive transport details")
+    outer = RuntimeError("sensitive provider details")
+    outer.__cause__ = inner
+
+    result = verify_deepseek._error_kinds(outer)
+
+    assert result == "RuntimeError -> OSError"
+    assert "sensitive" not in result
