@@ -116,6 +116,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .progress { height: 3px; background: var(--line); border-radius: 3px; overflow: hidden; margin-bottom: 32px; }
 .progress span { display: block; height: 100%; background: var(--orange); transform-origin: left; transform: scaleX(.25); transition: transform .7s var(--ease); }
 .step h3 { font: 700 clamp(28px, 3.4vw, 44px)/1.02 var(--display); letter-spacing: -.03em; margin: 0 0 26px; }
+.step h3:focus { outline: none; } /* focused by show() for screen readers, not a control */
 .num { display: block; font: 500 12px/1 var(--mono); letter-spacing: .06em; color: var(--orange-ink); margin-bottom: 14px; }
 .choices { display: grid; gap: 0; border-top: 1px solid var(--line); }
 .choice { all: unset; box-sizing: border-box; cursor: pointer; display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 6px 24px; padding: 22px 6px; border-bottom: 1px solid var(--line);
@@ -204,7 +205,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .rec-note { font: 400 12px/1.4 var(--mono); color: var(--muted); }
 
 /* AI summary, directions and tips */
-.summary { font: 400 italic 24px/1.35 var(--serif); margin: 6px 0 18px; max-width: 720px; }
+.summary { font: 400 italic 22px/1.4 var(--serif); margin: 6px 0 18px; max-width: 720px; }
 .directions { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 20px; }
 .directions .eyebrow { grid-column: 1 / -1; margin: 0 0 4px; }
 .direction { border-top: 2px solid var(--orange); padding: 12px 2px; display: grid; gap: 4px; }
@@ -219,7 +220,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .ask h4 em { color: var(--orange); font-size: 1.1em; }
 .ask-log { display: grid; gap: 10px; margin: 14px 0; }
 .ask-line { max-width: 85%; padding: 11px 15px; border-radius: 18px; animation: rise .5s var(--ease); }
-.ask-line p { margin: 0 0 6px; } .ask-line p:last-child { margin: 0; }
+.ask-line p { margin: 0 0 6px; white-space: pre-line; } .ask-line p:last-child { margin: 0; }
 .ask-line.user { justify-self: end; background: #fff; border: 1px solid var(--line); border-bottom-right-radius: 5px; }
 .ask-line.assistant { justify-self: start; background: var(--ink); color: var(--paper); border-bottom-left-radius: 5px; }
 .ask-line.assistant .mini { color: var(--paper); border-color: rgba(245, 239, 230, .35); }
