@@ -47,7 +47,7 @@ def test_live_smoke_exercises_matching_and_chat(monkeypatch, capsys) -> None:
     assert "smoke check passed" in capsys.readouterr().out
 
 
-def test_live_smoke_reports_only_safe_api_failure_details() -> None:
+def test_live_smoke_reports_only_safe_api_failure_details(capsys) -> None:
     error = RuntimeError("response body that should not be logged")
     error.status_code = 401
 
@@ -55,3 +55,6 @@ def test_live_smoke_reports_only_safe_api_failure_details() -> None:
         verify_deepseek._stop_for_api_error("matching", error)
 
     assert "response body" not in str(raised.value)
+    annotation = capsys.readouterr().out
+    assert annotation.startswith("::error title=DeepSeek integration check::")
+    assert "response body" not in annotation
