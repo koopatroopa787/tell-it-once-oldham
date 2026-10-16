@@ -17,20 +17,25 @@ Hackathon: Green Circles Manchester, "Build for Greater Manchester". Our borough
 
 ## Current direction: Pathly, the young people's flow (from the team wireframe)
 
-Product name: **Pathly**. This supersedes the phases below where they conflict; "Tell It Once" now refers only to the earlier connector tool. The app is now aimed at young people using it themselves. `streamlit run app.py` runs it; the earlier connector tool is still in `connector_app.py`.
+Product name: **Pathly**. This supersedes the phases below where they conflict; "Tell It Once" now refers only to the earlier connector tool. The app is now aimed at young people using it themselves.
+
+Pathly is a live website: a React front end (design not decided yet, so no UI code for now) calling a Python HTTP API. Streamlit has been removed. Run the API with `uvicorn api:app --reload`; docs at http://localhost:8000/docs. Until the React site exists, `web/` (plain HTML/CSS/JS + GSAP, orange shades plus petrol blue) is the demo front end, served by the API at http://localhost:8000/; see `web/README.md`, including the map contract and theme tokens for Akshita's Oldham map.
 
 Flow: Page 1 Student or Exploring for options -> Page 2 Voluntary, Paid work or Social work -> Page 3 (student: hobbies and current studies; exploring: interests and past work or experience, plus district) -> Results (AI matches with link, phone and contact).
+
+API: `GET /api/questions` returns the paths, types and per-path questions from `questions.py`, so the site never hard-codes them. `POST /api/match` takes the answers and returns `crisis`, `matches` (with contact details) and `used_ai`.
 
 One owner per file so merges do not conflict:
 
 | Slot | Files |
 | --- | --- |
-| Pages 1 and 2 | `flow/page1_path.py`, `flow/page2_type.py` |
-| Page 3 questions | `flow/page3_student.py`, `flow/page3_explore.py` |
-| AI matching and results | `matcher.py`, `flow/results.py` |
+| Questions and wording | `questions.py` |
+| HTTP API | `api.py`, `tests/test_api.py` |
+| AI matching | `matcher.py` |
 | Real Oldham opportunities | `data/opportunities.json` (keep the fields; leave blank rather than guess) |
+| Website (once the design is agreed) | `frontend/` |
 
-Conventions: every page module exposes `render()`; move between pages with `go("<step>")` from `flow/__init__.py`; store answers in `answers()`. A new page = new module + one line in `PAGES` in `app.py`. `matcher.py` redacts PII, forces a tool call, drops ids not in the list, and falls back to a no-AI match, so the app runs without an API key. Open question: does "Social work" mean social care careers or community and social activities? The sample data has both.
+Conventions: a new question = one entry in `QUESTIONS` in `questions.py` and one optional field on `MatchRequest` in `api.py`. `matcher.py` redacts PII, forces a tool call, drops ids not in the list, and falls back to a no-AI match, so the app runs without an API key. Open question: does "Social work" mean social care careers or community and social activities? The data currently covers community and social activities (youth clubs, Mahdlo, young carers).
 
 ## Non-negotiable rules
 
@@ -45,13 +50,14 @@ Conventions: every page module exposes `render()`; move between pages with `go("
 
 ## Current state (already working)
 
-- `app.py`: Streamlit app with Conversation, Handovers, Neighbourhood insights and About views.
+- `api.py`: Pathly's HTTP API (health, questions, match). `questions.py`, `matcher.py`.
+- Tell It Once back end only (its Streamlit UI was removed; the phases below that mention `st.` or `app.py` predate this and need a web equivalent):
 - `triage.py`: system prompt, forced tool call `record_plan`, validation against the directory, offline response cache.
 - `safety.py`: PII redaction and crisis rules. `directory.py`, `store.py`, `plan_export.py` (printable plan).
 - `eval_bias.py`: routes one situation written four ways and compares results.
 - `data/services.json` is SAMPLE data and must be replaced with real Oldham services (Phase 4).
 
-Run: `pip install -r requirements.txt`, copy `.env.example` to `.env`, then `streamlit run app.py`. Tests: `pytest`.
+Run: `pip install -r requirements.txt`, copy `.env.example` to `.env`, then `uvicorn api:app --reload`. Tests: `pytest`.
 
 ## Team workflow
 

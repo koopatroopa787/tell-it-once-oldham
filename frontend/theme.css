@@ -1,0 +1,87 @@
+/*
+  Pathly theme. Change colours and fonts here; everything else reads these tokens.
+
+  - The first block is the light theme. The two dark blocks below must hold the same
+    token names with dark values (one follows the device setting, one is for an explicit
+    data-theme="dark" on <html>). Keep the two dark blocks identical.
+  - --c-* are the map layer colours (pins, chips, result cards). --pin-ink is the icon
+    colour drawn on top of them, so keep it readable against all seven.
+  - --m-* are the map itself: land, water, roads, Metrolink and labels.
+  - Fonts load from Google Fonts in index.html. If you change a family here, change the
+    <link> there too.
+*/
+
+:root{
+  /* Page and panels */
+  --bg:#EDF0EA;
+  --surface:#FFFFFF;
+  --surface-2:#F5F7F2;
+  --ink:#16202E;
+  --muted:#56606F;
+  --line:#D8DDD2;
+
+  /* Brand: buttons, selected answers, "you are here" ring */
+  --accent:#0A6B60;
+  --accent-ink:#FFFFFF;
+  --accent-soft:#DCEEEA;
+  --focus:#1F4FD1;
+  --warn:#9A5B00;
+  --danger:#B42318;
+  --danger-soft:#FDECEA;
+
+  /* Map */
+  --m-out:#DCE1D7;        /* outside Oldham */
+  --m-land:#F9FAF6;       /* inside Oldham */
+  --m-water:#B8D5E5;
+  --m-water-line:#78AACA;
+  --m-park:#D3E7CC;
+  --m-road:#FFFFFF;
+  --m-case:#C3C8BC;       /* road edges */
+  --m-mway:#F3D2A6;       /* motorways */
+  --m-mway-case:#CF9F62;
+  --m-rail:#8B909A;
+  --m-tram:#E2A600;       /* Metrolink yellow */
+  --m-label:#384252;
+  --m-halo:#F9FAF6;
+  --m-bound:#16202E;      /* borough outline */
+
+  /* Map layers */
+  --pin-ink:#FFFFFF;
+  --c-work:#2C5DCF;
+  --c-vol:#12825A;
+  --c-social:#B8470F;
+  --c-money:#8A3DB3;
+  --c-health:#C53265;
+  --c-online:#0A7C92;
+  --c-support:#667080;
+
+  /* Type and shape */
+  --f-display:"Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Atkinson Hyperlegible", "Verdana", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --r:14px;
+  --shadow:0 1px 2px rgba(22,32,46,.06), 0 8px 24px rgba(22,32,46,.08);
+}
+
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1217; --surface:#161B22; --surface-2:#1C222B; --ink:#E8EBF0; --muted:#9BA4B3; --line:#2A313C;
+    --accent:#3EC3AE; --accent-ink:#04211C; --accent-soft:#143832; --focus:#86A8FF; --warn:#F0B44C;
+    --danger:#FF8A80; --danger-soft:#3A1A19;
+    --m-out:#0A0D11; --m-land:#151A21; --m-water:#1D3A4E; --m-water-line:#2F5D79; --m-park:#1A2A1F; --m-road:#2A313B; --m-case:#39414D;
+    --m-mway:#6A4D2C; --m-mway-case:#8C6A41; --m-rail:#6D7480; --m-tram:#F4C300; --m-label:#C8CED8; --m-halo:#151A21; --m-bound:#E8EBF0;
+    --pin-ink:#0E1217; --c-work:#7097FF; --c-vol:#3FCB8E; --c-social:#FF8A52; --c-money:#C27FF0; --c-health:#FF6E9B; --c-online:#3CC5DD; --c-support:#9BA4B3;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1217; --surface:#161B22; --surface-2:#1C222B; --ink:#E8EBF0; --muted:#9BA4B3; --line:#2A313C;
+  --accent:#3EC3AE; --accent-ink:#04211C; --accent-soft:#143832; --focus:#86A8FF; --warn:#F0B44C;
+  --danger:#FF8A80; --danger-soft:#3A1A19;
+  --m-out:#0A0D11; --m-land:#151A21; --m-water:#1D3A4E; --m-water-line:#2F5D79; --m-park:#1A2A1F; --m-road:#2A313B; --m-case:#39414D;
+  --m-mway:#6A4D2C; --m-mway-case:#8C6A41; --m-rail:#6D7480; --m-tram:#F4C300; --m-label:#C8CED8; --m-halo:#151A21; --m-bound:#E8EBF0;
+  --pin-ink:#0E1217; --c-work:#7097FF; --c-vol:#3FCB8E; --c-social:#FF8A52; --c-money:#C27FF0; --c-health:#FF6E9B; --c-online:#3CC5DD; --c-support:#9BA4B3;
+  --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+  color-scheme:dark;
+}
