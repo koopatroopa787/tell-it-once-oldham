@@ -125,6 +125,7 @@ class Matcher:
                 "tools": [{"type": "function", "function": _as_function(MATCH_TOOL)}],
                 "tool_choice": {"type": "function", "function": {"name": MATCH_TOOL["name"]}},
                 "thinking": {"type": "disabled"},  # DeepSeek rejects a forced tool call in thinking mode
+                "extra_body": {"thinking": {"type": "disabled"}},  # the same, for a LiteLLM proxy (it drops the line above)
             }
         )
         for call in body["choices"][0]["message"].get("tool_calls") or []:
