@@ -33,3 +33,19 @@ def test_gateway_passes_the_key_only_to_the_sdk(monkeypatch) -> None:
 
     assert captured["api_key"] == "server-only-secret"
     assert captured["base_url"] == "https://api.deepseek.com/anthropic"
+
+
+def test_gateway_strips_accidental_secret_whitespace(monkeypatch) -> None:
+    captured = {}
+
+    def fake_client(**kwargs):
+        captured.update(kwargs)
+        return object()
+
+    monkeypatch.setattr(config, "DEEPSEEK_API_KEY", "  server-only-secret\r\n")
+    monkeypatch.setattr(config, "DEEPSEEK_BASE_URL", "https://api.deepseek.com/anthropic")
+    monkeypatch.setattr(deepseek_gateway.anthropic, "Anthropic", fake_client)
+
+    deepseek_gateway.create_deepseek_client()
+
+    assert captured["api_key"] == "server-only-secret"

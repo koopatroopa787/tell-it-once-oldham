@@ -15,7 +15,8 @@ class DeepSeekUnavailable(RuntimeError):
 
 def create_deepseek_client():
     """Create an Anthropic-compatible client without exposing the key."""
-    if not config.DEEPSEEK_API_KEY:
+    api_key = config.DEEPSEEK_API_KEY.strip()
+    if not api_key:
         raise DeepSeekUnavailable("DEEPSEEK_API_KEY is not configured.")
 
     endpoint = urlparse(config.DEEPSEEK_BASE_URL)
@@ -23,7 +24,7 @@ def create_deepseek_client():
         raise DeepSeekUnavailable("DEEPSEEK_BASE_URL must use the official HTTPS endpoint.")
 
     return anthropic.Anthropic(
-        api_key=config.DEEPSEEK_API_KEY,
+        api_key=api_key,
         base_url=config.DEEPSEEK_BASE_URL,
         timeout=config.DEEPSEEK_TIMEOUT_SECONDS,
     )
