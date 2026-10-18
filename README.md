@@ -2,6 +2,8 @@
 
 Pathly helps young people in Oldham find their next step: volunteering, paid work or social opportunities. They answer a few questions about themselves, and AI matches them to verified local opportunities, each with a link and contact details.
 
+Built by Team Oldham, Pathly won first place at the October 2026 Green Circles Manchester AI Hackathon, supported by Barclays Eagle Labs and Silicon Mingle.
+
 Pathly will be a live website with a React front end (design still to be decided). The Python side is an HTTP API in `api.py` that the site calls.
 
 **Live demo:** https://kaakserver.tail042e87.ts.net/ (home page and voice chat) and https://kaakserver.tail042e87.ts.net/map/ (the Oldham map).
