@@ -20,7 +20,7 @@ import httpx
 KEYWORDS = [
     (r"sport|fitness|football|\bgym|swim|danc", "leisure assistant"),
     (r"\bart\b|draw|design|paint|photo", "design"),
-    (r"\bgam|tech|computer|\bcod|program|\bit\b", "IT support"),
+    (r"\bgam|tech|computer|\bcod|program|(?-i:\bIT\b)", "IT support"),
     (r"music|event|festival|theatre|drama", "events"),
     (r"cook|bak|food|kitchen|chef", "kitchen"),
     (r"help|\bcar(e|ing)\b|\bnan\b|grand|famil|people|child|nurs", "care assistant"),
@@ -32,8 +32,8 @@ TIMEOUT = 8
 
 
 def keyword(*texts: str | None) -> str:
-    text = " ".join(t for t in texts if t).lower()
-    return next((kw for pattern, kw in KEYWORDS if re.search(pattern, text)), "apprentice")
+    text = " ".join(t for t in texts if t)
+    return next((kw for pattern, kw in KEYWORDS if re.search(pattern, text, re.IGNORECASE)), "apprentice")
 
 
 def search_links(kw: str) -> list[dict[str, str]]:
