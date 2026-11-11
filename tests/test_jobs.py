@@ -15,6 +15,8 @@ BODY = {"path": "explore", "type": "paid_work", "interests": "football and my ma
 
 def test_keyword_comes_from_a_fixed_list() -> None:
     assert jobs.keyword("Gaming and tech") == "IT support"
+    assert jobs.keyword("IT") == "IT support"
+    assert jobs.keyword("I like it when I help people") == "care assistant"
     assert jobs.keyword("I like to start things", "part time") == "apprentice"  # "start"/"part" are not "art"
     assert jobs.keyword("helping my nan") == "care assistant"
     assert jobs.keyword(None, None) == "apprentice"
